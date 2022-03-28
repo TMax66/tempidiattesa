@@ -28,6 +28,8 @@ rm(taut)
   ## in un laboratorio differente da quello che ha ricevuto il conferimento dal proprietario per essere fleggato come confeirmento con altri lab
 
 
+###aggiungere un campo nconf come paste(anno, nconf)
+
 altrilab <- dt %>% 
   mutate(daescl = is.na(dt$Data_RDP), 
          altrilab = ifelse(is.na(Data_Invio), 0, 1)) %>%  
@@ -39,14 +41,15 @@ altrilab <- dt %>%
 
 
 dt %>% 
-  left_join(altrilab, by="nconf") %>%  
-  filter(is.na(Altrilab)) %>%   
+  left_join(altrilab, by="nconf") %>%  ## questo join marca il conferimento come conferimento con altri laboratori o senza.
+  mutate(Altrilab = ifelse(is.na(Altrilab), "No altri lab", "Altri Lab" )) %>%
+
   # mutate(daescl = is.na(dt$Data_RDP)) %>%  View()
   # filter(daescl == FALSE) %>%  View()
   mutate(taut = (Data_RDP-Data)/86400) %>%  
-  group_by(nconf,   Finalita, taut) %>% 
-  summarise(Esami = sum(Tot_Eseguiti, na.rm = TRUE)) %>% 
-  group_by(Finalita) %>% 
+  group_by(nconf,   Finalita, Altrilab, repprova, Laboratorio, taut ) %>% 
+  summarise(Esami = sum(Tot_Eseguiti, na.rm = TRUE)) %>%  View()
+  group_by(Finalita, Altrilab) %>% 
   summarise(n=n(), 
             Esami = sum(Esami), 
             TAUT = quantile(taut,probs = 0.50, na.rm= TRUE)) %>%  View()
