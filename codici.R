@@ -21,7 +21,8 @@ taut <- con %>% tbl(sql(queryTaut)) %>% as_tibble()
 saveRDS(taut, file = "taut.RDS")
 
 dt <- readRDS("taut.RDS")
-rm(taut)
+
+dt <- dt %>% mutate(nconf = paste(nconf, year(Data_Accettazione)))
 
 ##questo codice permette di fleggare il conferimento come conferimento con prove inviate ad altri lab o conferimento
  ## con prove eseguite tutte nel laboratorio di conferimento del campione, nel primo caso è sufficiente che ci sia una sola prova eseguita
@@ -48,11 +49,15 @@ dt %>%
   # filter(daescl == FALSE) %>%  View()
   mutate(taut = (Data_RDP-Data)/86400) %>%  
   group_by(nconf,   Finalita, Altrilab, repprova, Laboratorio, taut ) %>% 
-  summarise(Esami = sum(Tot_Eseguiti, na.rm = TRUE)) %>%  View()
+  summarise(Esami = sum(Tot_Eseguiti, na.rm = TRUE)) %>%   
   group_by(Finalita, Altrilab) %>% 
   summarise(n=n(), 
             Esami = sum(Esami), 
-            TAUT = quantile(taut,probs = 0.50, na.rm= TRUE)) %>%  View()
+            mTAUT = min(taut, na.rm=TRUE), 
+            "25perc" = quantile(taut,probs = 0.25, na.rm= TRUE), 
+            MdTAUT = quantile(taut,probs = 0.50, na.rm= TRUE), 
+            "75perc" = quantile(taut,probs = 0.75, na.rm= TRUE), 
+            maxTAUT = max(taut, na.rm=TRUE)) %>%  View()
   
   
 
