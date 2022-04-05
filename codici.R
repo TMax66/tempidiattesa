@@ -50,7 +50,7 @@ dt %>%
   mutate(taut = (Data_RDP-Data)/86400) %>%  
   group_by(nconf,   Finalita, Altrilab, repprova, Laboratorio, taut ) %>% 
   summarise(Esami = sum(Tot_Eseguiti, na.rm = TRUE)) %>%   
-  group_by(Finalita, Altrilab) %>% 
+  group_by(repprova, Altrilab) %>% 
   summarise(n=n(), 
             Esami = sum(Esami), 
             mTAUT = min(taut, na.rm=TRUE), 
