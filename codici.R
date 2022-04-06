@@ -33,7 +33,7 @@ dt <- dt %>% mutate(nconf = paste(nconf, year(Data_Accettazione)))
 
 altrilab <- dt %>% 
   mutate(daescl = is.na(dt$Data_RDP), 
-         altrilab = ifelse(is.na(Data_Invio), 0, 1)) %>%  
+         altrilab = ifelse(stracc == repprova, 0,1))%>%   
   group_by(nconf) %>% 
   summarise(altrilab = sum(altrilab, na.rm = TRUE)) %>% 
   filter(altrilab>=1) %>% 
@@ -41,23 +41,32 @@ altrilab <- dt %>%
   mutate(Altrilab = "conferimento con altri lab")  
 
 
+conf <- dt %>% 
+  left_join(altrilab, by="nconf") %>%  ## questo join marca il conferimento come conferimento con altri laboratori o senza.
+  mutate(Altrilab = ifelse(is.na(Altrilab), "No altri lab", "Altri Lab" )) 
+
+
+
+
+
+
 dt %>% 
   left_join(altrilab, by="nconf") %>%  ## questo join marca il conferimento come conferimento con altri laboratori o senza.
-  mutate(Altrilab = ifelse(is.na(Altrilab), "No altri lab", "Altri Lab" )) %>%
+  mutate(Altrilab = ifelse(is.na(Altrilab), "No altri lab", "Altri Lab" )) %>%  
 
   # mutate(daescl = is.na(dt$Data_RDP)) %>%  View()
   # filter(daescl == FALSE) %>%  View()
   mutate(taut = (Data_RDP-Data)/86400) %>%  
   group_by(nconf,   Finalita, Altrilab, repprova, Laboratorio, taut ) %>% 
   summarise(Esami = sum(Tot_Eseguiti, na.rm = TRUE)) %>%   
-  group_by(repprova, Altrilab) %>% 
+  group_by(Finalita, Altrilab) %>% 
   summarise(n=n(), 
             Esami = sum(Esami), 
             mTAUT = min(taut, na.rm=TRUE), 
             "25perc" = quantile(taut,probs = 0.25, na.rm= TRUE), 
             MdTAUT = quantile(taut,probs = 0.50, na.rm= TRUE), 
             "75perc" = quantile(taut,probs = 0.75, na.rm= TRUE), 
-            maxTAUT = max(taut, na.rm=TRUE)) %>%  View()
+            maxTAUT = max(taut, na.rm=TRUE)) %>% View()
   
   
 
@@ -66,8 +75,8 @@ dt %>%
 
 
 
-
-  
+conf %>% 
+  filter(Altrilab == "Altri Lab") %>%  View()
   
 
 
