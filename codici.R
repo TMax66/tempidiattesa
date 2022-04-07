@@ -70,7 +70,14 @@ dt %>%
   
   
 
-
+conf %>% 
+  filter(reg == "Sanità Animale") %>% 
+  group_by(Finalita, nconf) %>% 
+  count() %>% 
+  group_by(Finalita) %>% 
+  count(Finalita) %>%  
+  filter( !str_detect(Finalita, "Progetto")) %>% View()
+  
   
 
 
