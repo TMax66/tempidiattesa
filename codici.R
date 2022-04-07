@@ -1,6 +1,7 @@
 library(tidyverse)
 library(readr)
 library(readxl)
+library(openxlsx)
 library(here)
 library(lubridate)
 library(DBI)
@@ -18,18 +19,22 @@ source("sql.R")
 
 
 taut <- con %>% tbl(sql(queryTaut)) %>% as_tibble() 
+
+
+taut <- taut %>% mutate(nconf = paste(nconf, year(Data_Accettazione)), 
+                    stracc = iconv(stracc, to='ASCII//TRANSLIT'), 
+                    strapp = iconv(strapp, to='ASCII//TRANSLIT'), 
+                    Finalita = iconv(Finalita, to='ASCII//TRANSLIT'), 
+                    repprova = iconv(repprova, to='ASCII//TRANSLIT'), 
+                    Laboratorio = iconv(Laboratorio, to='ASCII//TRANSLIT'))
+
 saveRDS(taut, file = "taut.RDS")
-
 dt <- readRDS("taut.RDS")
-
-dt <- dt %>% mutate(nconf = paste(nconf, year(Data_Accettazione)))
 
 ##questo codice permette di fleggare il conferimento come conferimento con prove inviate ad altri lab o conferimento
  ## con prove eseguite tutte nel laboratorio di conferimento del campione, nel primo caso è sufficiente che ci sia una sola prova eseguita
-  ## in un laboratorio differente da quello che ha ricevuto il conferimento dal proprietario per essere fleggato come confeirmento con altri lab
+  ## in un laboratorio differente da quello che ha ricevuto il conferimento dal proprietario per essere fleggato come conferirmento con altri lab
 
-
-###aggiungere un campo nconf come paste(anno, nconf)
 
 altrilab <- dt %>% 
   mutate(daescl = is.na(dt$Data_RDP), 
@@ -41,13 +46,9 @@ altrilab <- dt %>%
   mutate(Altrilab = "conferimento con altri lab")  
 
 
-conf <- dt %>% 
-  left_join(altrilab, by="nconf") %>%  ## questo join marca il conferimento come conferimento con altri laboratori o senza.
-  mutate(Altrilab = ifelse(is.na(Altrilab), "No altri lab", "Altri Lab" )) 
-
-
-
-
+# conf <- dt %>% 
+#   left_join(altrilab, by="nconf") %>%  ## questo join marca il conferimento come conferimento con altri laboratori o senza.
+#   mutate(Altrilab = ifelse(is.na(Altrilab), "No altri lab", "Altri Lab" )) 
 
 
 dt %>% 
@@ -69,14 +70,15 @@ dt %>%
             maxTAUT = max(taut, na.rm=TRUE)) %>% View()
   
   
-
-conf %>% 
-  filter(reg == "Sanità Animale") %>% 
+###codice per cervap---
+dt %>% 
+  filter(reg == "Alimenti Uomo") %>% 
   group_by(Finalita, nconf) %>% 
   count() %>% 
   group_by(Finalita) %>% 
   count(Finalita) %>%  
-  filter( !str_detect(Finalita, "Progetto")) %>% View()
+  filter( !str_detect(Finalita, "Progetto")) %>% 
+  write.xlsx(file = "finalitaAU.xlsx")
   
   
 
