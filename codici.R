@@ -18,18 +18,55 @@ con <- DBI::dbConnect(odbc::odbc(), Driver = "SQL Server", Server = "dbprod02",
 source("sql.R")
 
 
+
 taut <- con %>% tbl(sql(queryTaut)) %>% as_tibble() 
 
 
 taut <- taut %>% mutate(nconf = paste(nconf, year(Data_Accettazione)), 
                     stracc = iconv(stracc, to='ASCII//TRANSLIT'), 
                     strapp = iconv(strapp, to='ASCII//TRANSLIT'), 
-                    Finalita = iconv(Finalita, to='ASCII//TRANSLIT'), 
+                    # Finalita = iconv(Finalita, to='ASCII//TRANSLIT'), 
                     repprova = iconv(repprova, to='ASCII//TRANSLIT'), 
                     Laboratorio = iconv(Laboratorio, to='ASCII//TRANSLIT'))
 
 saveRDS(taut, file = "taut.RDS")
 dt <- readRDS("taut.RDS")
+
+
+
+fin <- con %>% tbl(sql(queryFin)) %>% as_tibble() 
+
+
+fin <- fin %>% 
+  pivot_wider(names_from = "Descrizione", values_from = "Descrizione") 
+
+finalita <- fin %>% 
+  unite("finalita", 2:173, na.rm = TRUE, remove = FALSE) %>% 
+  mutate(multiF =  rowSums(!is.na(select(., -Numero)))-1) %>%   
+  select(nconf = Numero, finalita, multiF) 
+
+saveRDS(finalita, file ="finalita.RDS")
+
+
+dt <- dt %>% 
+  left_join(finalita, by = "nconf")    
+
+
+
+# library(tidyverse)
+# 
+# dt %>% 
+#   filter(nconf == "1053 2021") %>% 
+#   group_by(nconf,Finalita,prova, Data_Prelievo, Data, stracc, strapp, Data_Accettazione, 
+#            Data_Invio, Data_Carico, Data_Inizio_Analisi, Data_Fine_Analisi, DataOra_Primo_RDP_Completo_Firmato,
+#   ) %>% 
+#   #select(nconf, Finalita, prova) %>% 
+#   count() %>% View()
+
+
+
+
+
 
 ##questo codice permette di fleggare il conferimento come conferimento con prove inviate ad altri lab o conferimento
  ## con prove eseguite tutte nel laboratorio di conferimento del campione, nel primo caso è sufficiente che ci sia una sola prova eseguita
@@ -58,9 +95,9 @@ dt %>%
   # mutate(daescl = is.na(dt$Data_RDP)) %>%  View()
   # filter(daescl == FALSE) %>%  View()
   mutate(taut = (Data_RDP-Data)/86400) %>%  
-  group_by(nconf,   Finalita, Altrilab, repprova, Laboratorio, taut ) %>% 
+  group_by(nconf,   finalita, Altrilab, multiF,  repprova, laboratorio, taut ) %>% 
   summarise(Esami = sum(Tot_Eseguiti, na.rm = TRUE)) %>%   
-  group_by(Finalita, Altrilab) %>% 
+  group_by(finalita, Altrilab, multiF) %>% 
   summarise(n=n(), 
             Esami = sum(Esami), 
             mTAUT = min(taut, na.rm=TRUE), 
@@ -70,15 +107,15 @@ dt %>%
             maxTAUT = max(taut, na.rm=TRUE)) %>% View()
   
   
-###codice per cervap---
-dt %>% 
-  filter(reg == "Alimenti Uomo") %>% 
-  group_by(Finalita, nconf) %>% 
-  count() %>% 
-  group_by(Finalita) %>% 
-  count(Finalita) %>%  
-  filter( !str_detect(Finalita, "Progetto")) %>% 
-  write.xlsx(file = "finalitaAU.xlsx")
+# ###codice per cervap---
+# dt %>% 
+#   filter(reg == "Alimenti Uomo") %>% 
+#   group_by(Finalita, nconf) %>% 
+#   count() %>% 
+#   group_by(Finalita) %>% 
+#   count(Finalita) %>%  
+#   filter( !str_detect(Finalita, "Progetto")) %>% 
+#   write.xlsx(file = "finalitaAU.xlsx")
   
   
 
@@ -127,3 +164,9 @@ dt %>%
   # geom_histogram()+
   # xlim(c(0, 25))
   
+
+
+
+###finalità
+
+
