@@ -68,6 +68,14 @@ E' possibile definire anche un TAUT più dilatato come tempo di attesa Percepito
 
 # Analisi del tempo di attesa dell'utenza di IZSLER per l'attività svolta nel 2021. 
 
+In base al processo sopra descritto i conferimenti possono essere classificati in diverse categorie a seconda delle finalità e dell'esecuzioni in differenti laboratori delle prove.
+
+Ai fini dell'analisi i conferimenti saranno distinti in queste categorie:
+
+Conferimenti con finalità singola
+Conferimenti con finalità multiple
+Conferimenti con prove per altri laboratori
+Conferimenti con prove interne ( no altri laboratori)
 
 
 
