@@ -72,10 +72,19 @@ In base al processo sopra descritto i conferimenti possono essere classificati i
 
 Ai fini dell'analisi i conferimenti saranno distinti in queste categorie:
 
-Conferimenti con finalità singola
-Conferimenti con finalità multiple
-Conferimenti con prove per altri laboratori
-Conferimenti con prove interne ( no altri laboratori)
+- Conferimenti con finalità singola
+  - Conferimenti con prove per altri laboratori
+  - Conferimenti con prove interne ( no altri laboratori)
+
+- Conferimenti con finalità multiple
+  - Conferimenti con prove per altri laboratori
+  - Conferimenti con prove interne ( no altri laboratori)
+  
+Le analisi dei tempi di attesa dell'utenza saranno quindi eseguite per ogni categoria, in modo da rendere omogenei gli eventuali confronti tra strutture.
+
+
+  
+
 
 
 

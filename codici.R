@@ -47,6 +47,7 @@ finalita <- fin %>%
 
 saveRDS(finalita, file ="finalita.RDS")
 
+finalita <- readRDS("finalita.RDS")
 
 dt <- dt %>% 
   left_join(finalita, by = "nconf")    
