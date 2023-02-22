@@ -91,7 +91,7 @@ altrilab <- dt %>%
 
 dt %>% 
   left_join(altrilab, by="nconf") %>%  ## questo join marca il conferimento come conferimento con altri laboratori o senza.
-  mutate(Altrilab = ifelse(is.na(Altrilab), "No altri lab", "Altri Lab" )) %>%  
+  mutate(Altrilab = ifelse(is.na(Altrilab), "No altri lab", "Altri Lab" )) %>% 
 
   # mutate(daescl = is.na(dt$Data_RDP)) %>%  View()
   # filter(daescl == FALSE) %>%  View()
