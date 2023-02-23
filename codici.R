@@ -90,9 +90,17 @@ altrilab <- dt %>%
 
 
 dt %>% 
+<<<<<<< HEAD
   left_join(altrilab, by="nconf") %>% # questo join marca il conferimento come conferimento con altri laboratori o senza.
   filter(!Chiave %in% c(2361,5174)) %>%  
   mutate(Altrilab = ifelse(is.na(Altrilab), "No altri lab", Altrilab )) %>%  View()
+=======
+  left_join(altrilab, by="nconf") %>%  ## questo join marca il conferimento come conferimento con altri laboratori o senza.
+  mutate(Altrilab = ifelse(is.na(Altrilab), "No altri lab", "Altri Lab" )) %>% 
+
+  # mutate(daescl = is.na(dt$Data_RDP)) %>%  View()
+  # filter(daescl == FALSE) %>%  View()
+>>>>>>> 634a6a6c262e7b34b03789521fddaed687d28f81
   mutate(taut = (Data_RDP-Data)/86400) %>%  
   group_by(nconf,   finalita, Altrilab, multiF,  repprova, laboratorio, taut ) %>% 
   summarise(Esami = sum(Tot_Eseguiti, na.rm = TRUE)) %>%   
