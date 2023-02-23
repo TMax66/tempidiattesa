@@ -78,10 +78,10 @@ altrilab <- dt %>%
   mutate(daescl = is.na(dt$Data_RDP), 
          altrilab = ifelse(stracc == repprova, 0,1))%>%   
   group_by(nconf) %>% 
-  summarise(altrilab = sum(altrilab, na.rm = TRUE)) %>% 
-  filter(altrilab>=1) %>% 
-  distinct(nconf) %>% 
-  mutate(Altrilab = "conferimento con altri lab")  
+  summarise(altrilab = sum(altrilab, na.rm = TRUE)) %>%  
+  #filter(altrilab>=1) %>% 
+  unique() %>%  
+  mutate(Altrilab = ifelse(altrilab == 0, "No", "Si"))  
 
 
 # conf <- dt %>% 
@@ -90,11 +90,9 @@ altrilab <- dt %>%
 
 
 dt %>% 
-  left_join(altrilab, by="nconf") %>%  ## questo join marca il conferimento come conferimento con altri laboratori o senza.
-  mutate(Altrilab = ifelse(is.na(Altrilab), "No altri lab", "Altri Lab" )) %>%  
-
-  # mutate(daescl = is.na(dt$Data_RDP)) %>%  View()
-  # filter(daescl == FALSE) %>%  View()
+  left_join(altrilab, by="nconf") %>% # questo join marca il conferimento come conferimento con altri laboratori o senza.
+  filter(!Chiave %in% c(2361,5174)) %>%  
+  mutate(Altrilab = ifelse(is.na(Altrilab), "No altri lab", Altrilab )) %>%  View()
   mutate(taut = (Data_RDP-Data)/86400) %>%  
   group_by(nconf,   finalita, Altrilab, multiF,  repprova, laboratorio, taut ) %>% 
   summarise(Esami = sum(Tot_Eseguiti, na.rm = TRUE)) %>%   
@@ -107,6 +105,42 @@ dt %>%
             "75perc" = quantile(taut,probs = 0.75, na.rm= TRUE), 
             maxTAUT = max(taut, na.rm=TRUE)) %>% View()
   
+
+
+##codici taut per struttura
+
+dt %>% 
+  left_join(altrilab, by="nconf") %>%  ## questo join marca il conferimento come conferimento con altri laboratori o senza.
+  mutate(Altrilab = ifelse(is.na(Altrilab), "No altri lab", "Altri Lab" )) %>%  
+  mutate(taut = (Data_RDP-Data)/86400) %>%  
+  group_by(stracc, finalita, Altrilab, multiF) %>% 
+  summarise(Esami = sum(Tot_Eseguiti, na.rm = TRUE),
+            n=n(), 
+            mTAUT = min(taut, na.rm=TRUE), 
+            "25perc" = quantile(taut,probs = 0.25, na.rm= TRUE), 
+            MdTAUT = quantile(taut,probs = 0.50, na.rm= TRUE), 
+            "75perc" = quantile(taut,probs = 0.75, na.rm= TRUE), 
+            maxTAUT = max(taut, na.rm=TRUE)) %>% View()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   
 # ###codice per cervap---
 # dt %>% 
@@ -122,8 +156,8 @@ dt %>%
 
 
 
-conf %>% 
-  filter(Altrilab == "Altri Lab") %>%  View()
+# conf %>% 
+#   filter(Altrilab == "Altri Lab") %>%  View()
   
 
 
@@ -133,29 +167,29 @@ conf %>%
   #count() %>% 
   #filter(daescl == FALSE) %>% 
     
-  distinct(nconf, .keep_all = TRUE) %>%
-  arrange(desc(n)) %>% View()
-
-dt %>% 
-  distinct(nconf, .keep_all = TRUE) %>% View()
-
-
-
-dt %>% 
-  group_by(Finalita) %>% 
-  count() %>% 
-  arrange(desc(n))
-
-dt %>% 
-  # filter(repprova == "Sede Territoriale di Bergamo" &
-  #          Finalita == "Piano Paratubercolosi") %>% 
-  mutate(taut = (Data_RDP-Data)/86400) %>% 
-  distinct(nconf,.keep_all = TRUE) %>% 
-  filter(Finalita == "Diagnostica") %>% 
-  group_by(repprova, giorno) %>%
-  summarise(Mtaut= mean(taut, na.rm=TRUE), 
-            n=n()) %>% 
-  arrange(desc(n)) %>% View()
+#   distinct(nconf, .keep_all = TRUE) %>%
+#   arrange(desc(n)) %>% View()
+# 
+# dt %>% 
+#   distinct(nconf, .keep_all = TRUE) %>% View()
+# 
+# 
+# 
+# dt %>% 
+#   group_by(Finalita) %>% 
+#   count() %>% 
+#   arrange(desc(n))
+# 
+# dt %>% 
+#   # filter(repprova == "Sede Territoriale di Bergamo" &
+#   #          Finalita == "Piano Paratubercolosi") %>% 
+#   mutate(taut = (Data_RDP-Data)/86400) %>% 
+#   distinct(nconf,.keep_all = TRUE) %>% 
+#   filter(Finalita == "Diagnostica") %>% 
+#   group_by(repprova, giorno) %>%
+#   summarise(Mtaut= mean(taut, na.rm=TRUE), 
+#             n=n()) %>% 
+#   arrange(desc(n)) %>% View()
 
   
   
