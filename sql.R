@@ -79,7 +79,7 @@ queryTaut <- "SELECT
   dbo.Esami_Aggregati.Data_Invio,
   dbo.Esami_Aggregati.Data_Carico,
   dbo.Anag_Reparti.Descrizione As repprova,
-  dbo.Anag_Laboratori.Descrizione As laboratorio,
+  dbo.Anag_Laboratori.Descrizione As Laboratorio,
   dbo.Esami_Aggregati.Data_Inizio_Analisi,
   dbo.Esami_Aggregati.Data_Fine_Analisi,
   dbo.RDP_Date_Emissione.Data_RDP,
@@ -125,7 +125,7 @@ WHERE
   AND  dbo.Esami_Aggregati.Esame_Altro_Ente = 0
   AND  dbo.Esami_Aggregati.Esame_Altro_Ente = 0
   AND  (
-  {fn year(dbo.Conferimenti.Data)}  =  2021
+  {fn year(dbo.Conferimenti.Data)}  =  2022
   AND  dbo.Anag_Registri.Descrizione  NOT IN  ('Altri Controlli (cosmetici,ambientali..)', 'Controlli Interni Sistema Qualità')
   )
 "
@@ -150,7 +150,7 @@ WHERE
   AND  ( dbo.Conferimenti.Anno=dbo.Conferimenti_Finalita.Anno and dbo.Conferimenti.Numero=dbo.Conferimenti_Finalita.Numero  )
   AND  ( dbo.Conferimenti_Finalita.Finalita=dbo_Anag_Finalita_Confer.Codice  )
   AND  (
-  {fn year(dbo.Conferimenti.Data_Accettazione)}  =  2021
+  {fn year(dbo.Conferimenti.Data_Accettazione)}  =  2022
   AND  dbo.Anag_Registri.Descrizione  NOT IN  ('Altri Controlli (cosmetici,ambientali..)', 'Controlli Interni Sistema Qualità')
   )
 "

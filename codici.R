@@ -22,7 +22,8 @@ source("sql.R")
 taut <- con %>% tbl(sql(queryTaut)) %>% as_tibble() 
 
 
-taut <- taut %>% mutate(nconf = paste(nconf, year(Data_Accettazione)), 
+taut <- taut %>% mutate(
+                   # nconf = paste0(nconf, year(Data_Accettazione)), 
                     stracc = iconv(stracc, to='ASCII//TRANSLIT'), 
                     strapp = iconv(strapp, to='ASCII//TRANSLIT'), 
                     # Finalita = iconv(Finalita, to='ASCII//TRANSLIT'), 
@@ -41,7 +42,7 @@ fin <- fin %>%
   pivot_wider(names_from = "Descrizione", values_from = "Descrizione") 
 
 finalita <- fin %>% 
-  unite("finalita", 2:173, na.rm = TRUE, remove = FALSE) %>% 
+  unite("finalita", 2:167, na.rm = TRUE, remove = FALSE) %>% 
   mutate(multiF =  rowSums(!is.na(select(., -Numero)))-1) %>%   
   select(nconf = Numero, finalita, multiF) 
 
