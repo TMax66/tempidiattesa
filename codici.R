@@ -20,18 +20,27 @@ source("sql.R")
 
 
 taut <- con %>% tbl(sql(queryTaut)) %>% as_tibble() 
+saveRDS(taut, file = "taut.RDS")
+
+taut <- readRDS("taut.RDS")
+
+taut
+
+
+
 
 
 taut <- taut %>% mutate(
-                   # nconf = paste0(nconf, year(Data_Accettazione)), 
+                    nconf2 = paste0(nconf, year(Data_Accettazione)), 
                     stracc = iconv(stracc, to='ASCII//TRANSLIT'), 
                     strapp = iconv(strapp, to='ASCII//TRANSLIT'), 
                     # Finalita = iconv(Finalita, to='ASCII//TRANSLIT'), 
                     repprova = iconv(repprova, to='ASCII//TRANSLIT'), 
                     Laboratorio = iconv(Laboratorio, to='ASCII//TRANSLIT'))
-
 saveRDS(taut, file = "taut.RDS")
 dt <- readRDS("taut.RDS")
+
+
 
 
 
@@ -42,15 +51,18 @@ fin <- fin %>%
   pivot_wider(names_from = "Descrizione", values_from = "Descrizione") 
 
 finalita <- fin %>% 
-  unite("finalita", 2:167, na.rm = TRUE, remove = FALSE) %>% 
+  unite("finalita", 3:167, na.rm = TRUE, remove = FALSE) %>% 
   mutate(multiF =  rowSums(!is.na(select(., -Numero)))-1) %>%   
-  select(nconf = Numero, finalita, multiF) 
-
+  select(nconf = Numero, finalita, multiF)
 saveRDS(finalita, file ="finalita.RDS")
+
+
 
 finalita <- readRDS("finalita.RDS")
 
 dt <- dt %>% 
+  mutate(anno= year(Data_Accettazione)) %>% 
+  filter(anno < 2023 & anno >2021 ) %>% 
   left_join(finalita, by = "nconf")    
 
 
@@ -77,12 +89,12 @@ dt <- dt %>%
 
 altrilab <- dt %>% 
   mutate(daescl = is.na(dt$Data_RDP), 
-         altrilab = ifelse(stracc == repprova, 0,1))%>%   
+         altrilab = ifelse(stracc == repprova, 0,1))%>%
   group_by(nconf) %>% 
   summarise(altrilab = sum(altrilab, na.rm = TRUE)) %>%  
   #filter(altrilab>=1) %>% 
-  unique() %>%  
-  mutate(Altrilab = ifelse(altrilab == 0, "No", "Si"))  
+  #unique() %>%  
+  mutate(Altrilab = ifelse(altrilab == 0, "No", "Si"))
 
 
 # conf <- dt %>% 
@@ -91,17 +103,12 @@ altrilab <- dt %>%
 
 
 dt %>% 
-<<<<<<< HEAD
+
   left_join(altrilab, by="nconf") %>% # questo join marca il conferimento come conferimento con altri laboratori o senza.
   filter(!Chiave %in% c(2361,5174)) %>%  
-  mutate(Altrilab = ifelse(is.na(Altrilab), "No altri lab", Altrilab )) %>%  View()
-=======
+  mutate(Altrilab = ifelse(is.na(Altrilab), "No altri lab", Altrilab )) %>% 
   left_join(altrilab, by="nconf") %>%  ## questo join marca il conferimento come conferimento con altri laboratori o senza.
   mutate(Altrilab = ifelse(is.na(Altrilab), "No altri lab", "Altri Lab" )) %>% 
-
-  # mutate(daescl = is.na(dt$Data_RDP)) %>%  View()
-  # filter(daescl == FALSE) %>%  View()
->>>>>>> 634a6a6c262e7b34b03789521fddaed687d28f81
   mutate(taut = (Data_RDP-Data)/86400) %>%  
   group_by(nconf,   finalita, Altrilab, multiF,  repprova, laboratorio, taut ) %>% 
   summarise(Esami = sum(Tot_Eseguiti, na.rm = TRUE)) %>%   
