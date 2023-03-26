@@ -60,7 +60,7 @@ WHERE
   AND  dbo.Esami_Aggregati.Esame_Altro_Ente = 0
   AND  dbo.Esami_Aggregati.Esame_Altro_Ente = 0
   AND  (
-  {fn year(dbo.Conferimenti.Data)}  =  2021
+  {fn year(dbo.Conferimenti.Data)}  =  2022
   AND  dbo.Anag_Registri.Descrizione  NOT IN  ('Altri Controlli (cosmetici,ambientali..)', 'Controlli Interni Sistema Qualità')
   )"
 
@@ -125,33 +125,33 @@ WHERE
 #   AND  dbo.Esami_Aggregati.Esame_Altro_Ente = 0
 #   AND  dbo.Esami_Aggregati.Esame_Altro_Ente = 0
 #   AND  (
-#   {fn year(dbo.Conferimenti.Data)}  =  2022
+#   {fn year(dbo.Conferimenti.Data_Accettazione)}  =  2022
 #   AND  dbo.Anag_Registri.Descrizione  NOT IN  ('Altri Controlli (cosmetici,ambientali..)', 'Controlli Interni Sistema Qualità')
 #   )
 # "
-
-
-
-
-
-
-
-
-queryFin <- "SELECT
-   dbo.Conferimenti.Data,
-  dbo.Conferimenti.Numero,
-  dbo_Anag_Finalita_Confer.Descrizione
-FROM
-  dbo.Conferimenti,
-  dbo.Anag_Finalita  dbo_Anag_Finalita_Confer,
-  dbo.Anag_Registri,
-  dbo.Conferimenti_Finalita
-WHERE
-  ( dbo.Conferimenti.Registro=dbo.Anag_Registri.Codice  )
-  AND  ( dbo.Conferimenti.Anno=dbo.Conferimenti_Finalita.Anno and dbo.Conferimenti.Numero=dbo.Conferimenti_Finalita.Numero  )
-  AND  ( dbo.Conferimenti_Finalita.Finalita=dbo_Anag_Finalita_Confer.Codice  )
-  AND  (
-{fn year(dbo.Conferimenti.Data)}  =  2022
-  AND  dbo.Anag_Registri.Descrizione  NOT IN  ('Altri Controlli (cosmetici,ambientali..)', 'Controlli Interni Sistema Qualità')
-  )
-"
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# queryFin <- "SELECT
+#    dbo.Conferimenti.Data_Accettazione,
+#   dbo.Conferimenti.Numero,
+#   dbo_Anag_Finalita_Confer.Descrizione
+# FROM
+#   dbo.Conferimenti,
+#   dbo.Anag_Finalita  dbo_Anag_Finalita_Confer,
+#   dbo.Anag_Registri,
+#   dbo.Conferimenti_Finalita
+# WHERE
+#   ( dbo.Conferimenti.Registro=dbo.Anag_Registri.Codice  )
+#   AND  ( dbo.Conferimenti.Anno=dbo.Conferimenti_Finalita.Anno and dbo.Conferimenti.Numero=dbo.Conferimenti_Finalita.Numero  )
+#   AND  ( dbo.Conferimenti_Finalita.Finalita=dbo_Anag_Finalita_Confer.Codice  )
+#   AND  (
+# {fn year(dbo.Conferimenti.Data_Accettazione)}  =  2022
+#   AND  dbo.Anag_Registri.Descrizione  NOT IN  ('Altri Controlli (cosmetici,ambientali..)', 'Controlli Interni Sistema Qualità')
+#   )
+# "

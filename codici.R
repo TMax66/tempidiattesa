@@ -18,29 +18,19 @@ con <- DBI::dbConnect(odbc::odbc(), Driver = "SQL Server", Server = "dbprod02",
 source("sql.R")
 
 
-
 taut <- con %>% tbl(sql(queryTaut)) %>% as_tibble() 
-saveRDS(taut, file = "taut.RDS")
 
-taut <- readRDS("taut.RDS")
+#taut <- saveRDS(taut, file = "taut.RDS")
+# taut <- taut %>% mutate(
+#                     nconf2 = paste0(nconf, year(Data_Accettazione)), 
+#                     stracc = iconv(stracc, to='ASCII//TRANSLIT'), 
+#                     strapp = iconv(strapp, to='ASCII//TRANSLIT'), 
+#                     # Finalita = iconv(Finalita, to='ASCII//TRANSLIT'), 
+#                     repprova = iconv(repprova, to='ASCII//TRANSLIT'), 
+#                     Laboratorio = iconv(Laboratorio, to='ASCII//TRANSLIT'))
+# saveRDS(taut, file = "taut.RDS")
 
-taut
-
-
-
-
-
-taut <- taut %>% mutate(
-                    nconf2 = paste0(nconf, year(Data_Accettazione)), 
-                    stracc = iconv(stracc, to='ASCII//TRANSLIT'), 
-                    strapp = iconv(strapp, to='ASCII//TRANSLIT'), 
-                    # Finalita = iconv(Finalita, to='ASCII//TRANSLIT'), 
-                    repprova = iconv(repprova, to='ASCII//TRANSLIT'), 
-                    Laboratorio = iconv(Laboratorio, to='ASCII//TRANSLIT'))
-saveRDS(taut, file = "taut.RDS")
 dt <- readRDS("taut.RDS")
-
-
 
 
 
