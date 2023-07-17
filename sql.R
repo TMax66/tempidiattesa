@@ -9,40 +9,37 @@ queryTaut <- "SELECT        dbo.Conferimenti.Numero AS numero, dbo.Anag_Registri
                          dbo.Nomenclatore.Codice_Tecnica, dbo.Nomenclatore.Chiave, dbo_Nomenclatore_Gruppi.Codice_Gruppo AS Codgruppo, 
 						 dbo_Nomenclatore_Gruppi.Codice_Prova AS COdprovaNMgruppi, dbo_Nomenclatore_Gruppi.Codice_Tecnica AS CodTecnicaNMgruppi, 
                          dbo_Nomenclatore_Gruppi.Chiave AS ChiaveGruppi
-FROM
-{ oj dbo.Anag_Registri INNER JOIN dbo.Conferimenti ON ( dbo.Conferimenti.Registro=dbo.Anag_Registri.Codice )
-   LEFT OUTER JOIN dbo.Esami_Aggregati ON ( dbo.Conferimenti.Anno=dbo.Esami_Aggregati.Anno_Conferimento and dbo.Conferimenti.Numero=dbo.Esami_Aggregati.Numero_Conferimento )
-   LEFT OUTER JOIN dbo.Nomenclatore_MP ON ( dbo.Esami_Aggregati.Nomenclatore=dbo.Nomenclatore_MP.Codice )
-   LEFT OUTER JOIN dbo.Anag_Metodi_di_Prova ON ( dbo.Nomenclatore_MP.MP=dbo.Anag_Metodi_di_Prova.Codice )
-   LEFT OUTER JOIN dbo.Nomenclatore_Settori ON ( dbo.Nomenclatore_MP.Nomenclatore_Settore=dbo.Nomenclatore_Settori.Codice )
-   LEFT OUTER JOIN dbo.Nomenclatore ON ( dbo.Nomenclatore_Settori.Codice_Nomenclatore=dbo.Nomenclatore.Chiave )
-   LEFT OUTER JOIN dbo.Anag_Prove ON ( dbo.Nomenclatore.Codice_Prova=dbo.Anag_Prove.Codice )
-   LEFT OUTER JOIN dbo.Anag_Tecniche ON ( dbo.Nomenclatore.Codice_Tecnica=dbo.Anag_Tecniche.Codice )
-   LEFT OUTER JOIN dbo.Anag_Gruppo_Prove ON ( dbo.Nomenclatore.Codice_Gruppo=dbo.Anag_Gruppo_Prove.Codice )
-   LEFT OUTER JOIN dbo.Programmazione_Finalita ON ( dbo.Esami_Aggregati.Anno_Conferimento=dbo.Programmazione_Finalita.Anno_Conferimento and dbo.Esami_Aggregati.Numero_Conferimento=dbo.Programmazione_Finalita.Numero_Conferimento and dbo.Esami_Aggregati.Codice=dbo.Programmazione_Finalita.Codice )
-   LEFT OUTER JOIN dbo.Anag_Finalita ON ( dbo.Programmazione_Finalita.Finalita=dbo.Anag_Finalita.Codice )
-   LEFT OUTER JOIN dbo.Laboratori_Reparto ON ( dbo.Esami_Aggregati.RepLab_analisi=dbo.Laboratori_Reparto.Chiave )
-   LEFT OUTER JOIN dbo.Anag_Reparti ON ( dbo.Laboratori_Reparto.Reparto=dbo.Anag_Reparti.Codice )
-   LEFT OUTER JOIN dbo.Anag_Laboratori ON ( dbo.Laboratori_Reparto.Laboratorio=dbo.Anag_Laboratori.Codice )
-   LEFT OUTER JOIN dbo.Nomenclatore_MP  dbo_Nomenclatore_MP_Gruppi ON ( dbo.Esami_Aggregati.Gruppo_Nomenclatore=dbo_Nomenclatore_MP_Gruppi.Codice )
-   LEFT OUTER JOIN dbo.Nomenclatore_Settori  dbo_Nomenclatore_Settori_Gruppi ON ( dbo_Nomenclatore_MP_Gruppi.Nomenclatore_Settore=dbo_Nomenclatore_Settori_Gruppi.Codice )
-   LEFT OUTER JOIN dbo.Nomenclatore  dbo_Nomenclatore_Gruppi ON ( dbo_Nomenclatore_Settori_Gruppi.Codice_Nomenclatore=dbo_Nomenclatore_Gruppi.Chiave )
-   LEFT OUTER JOIN dbo.Anag_Prove  dbo_Anag_Prove_Gruppi ON ( dbo_Nomenclatore_Gruppi.Codice_Prova=dbo_Anag_Prove_Gruppi.Codice )
-   INNER JOIN dbo.Laboratori_Reparto  dbo_Laboratori_Reparto_ConfProp ON ( dbo.Conferimenti.RepLab=dbo_Laboratori_Reparto_ConfProp.Chiave )
-   INNER JOIN dbo.Anag_Reparti  dbo_Anag_Reparti_ConfProp ON ( dbo_Laboratori_Reparto_ConfProp.Reparto=dbo_Anag_Reparti_ConfProp.Codice )
-   INNER JOIN dbo.Laboratori_Reparto  dbo_Laboratori_Reparto_ConfAcc ON ( dbo.Conferimenti.RepLab_Conferente=dbo_Laboratori_Reparto_ConfAcc.Chiave )
-   INNER JOIN dbo.Anag_Reparti  dbo_Anag_Reparti_ConfAcc ON ( dbo_Laboratori_Reparto_ConfAcc.Reparto=dbo_Anag_Reparti_ConfAcc.Codice )
-   INNER JOIN dbo.Conferimenti_Finalita ON ( dbo.Conferimenti.Anno=dbo.Conferimenti_Finalita.Anno and dbo.Conferimenti.Numero=dbo.Conferimenti_Finalita.Numero )
-   INNER JOIN dbo.Anag_Finalita  dbo_Anag_Finalita_Confer ON ( dbo.Conferimenti_Finalita.Finalita=dbo_Anag_Finalita_Confer.Codice )
-  }
-WHERE
-  dbo.Esami_Aggregati.Esame_Altro_Ente = 0
-  AND  dbo.Esami_Aggregati.Esame_Altro_Ente = 0
-  AND  (
-  {fn year(dbo.Conferimenti.Data)}  =  2022
-  AND  dbo.Anag_Registri.Descrizione  NOT IN  ('Altri Controlli (cosmetici,ambientali..)', 'Controlli Interni Sistema Qualità')
-  )
-"
+FROM            dbo.Anag_Registri INNER JOIN
+                         dbo.Conferimenti ON dbo.Conferimenti.Registro = dbo.Anag_Registri.Codice LEFT OUTER JOIN
+                         dbo.Esami_Aggregati ON dbo.Conferimenti.Anno = dbo.Esami_Aggregati.Anno_Conferimento AND dbo.Conferimenti.Numero = dbo.Esami_Aggregati.Numero_Conferimento LEFT OUTER JOIN
+                         dbo.Nomenclatore_MP ON dbo.Esami_Aggregati.Nomenclatore = dbo.Nomenclatore_MP.Codice LEFT OUTER JOIN
+                         dbo.Anag_Metodi_di_Prova ON dbo.Nomenclatore_MP.MP = dbo.Anag_Metodi_di_Prova.Codice LEFT OUTER JOIN
+                         dbo.Nomenclatore_Settori ON dbo.Nomenclatore_MP.Nomenclatore_Settore = dbo.Nomenclatore_Settori.Codice LEFT OUTER JOIN
+                         dbo.Nomenclatore ON dbo.Nomenclatore_Settori.Codice_Nomenclatore = dbo.Nomenclatore.Chiave LEFT OUTER JOIN
+                         dbo.Anag_Prove ON dbo.Nomenclatore.Codice_Prova = dbo.Anag_Prove.Codice LEFT OUTER JOIN
+                         dbo.Anag_Gruppo_Prove ON dbo.Nomenclatore.Codice_Gruppo = dbo.Anag_Gruppo_Prove.Codice LEFT OUTER JOIN
+                         dbo.Programmazione_Finalita ON dbo.Esami_Aggregati.Anno_Conferimento = dbo.Programmazione_Finalita.Anno_Conferimento AND 
+                         dbo.Esami_Aggregati.Numero_Conferimento = dbo.Programmazione_Finalita.Numero_Conferimento AND dbo.Esami_Aggregati.Codice = dbo.Programmazione_Finalita.Codice LEFT OUTER JOIN
+                         dbo.Anag_Finalita ON dbo.Programmazione_Finalita.Finalita = dbo.Anag_Finalita.Codice LEFT OUTER JOIN
+                         dbo.Laboratori_Reparto ON dbo.Esami_Aggregati.RepLab_analisi = dbo.Laboratori_Reparto.Chiave LEFT OUTER JOIN
+                         dbo.Anag_Reparti ON dbo.Laboratori_Reparto.Reparto = dbo.Anag_Reparti.Codice LEFT OUTER JOIN
+                         dbo.Anag_Laboratori ON dbo.Laboratori_Reparto.Laboratorio = dbo.Anag_Laboratori.Codice LEFT OUTER JOIN
+                         dbo.Nomenclatore_MP AS dbo_Nomenclatore_MP_Gruppi ON dbo.Esami_Aggregati.Gruppo_Nomenclatore = dbo_Nomenclatore_MP_Gruppi.Codice LEFT OUTER JOIN
+                         dbo.Nomenclatore_Settori AS dbo_Nomenclatore_Settori_Gruppi ON dbo_Nomenclatore_MP_Gruppi.Nomenclatore_Settore = dbo_Nomenclatore_Settori_Gruppi.Codice LEFT OUTER JOIN
+                         dbo.Nomenclatore AS dbo_Nomenclatore_Gruppi ON dbo_Nomenclatore_Settori_Gruppi.Codice_Nomenclatore = dbo_Nomenclatore_Gruppi.Chiave LEFT OUTER JOIN
+                         dbo.Anag_Prove AS dbo_Anag_Prove_Gruppi ON dbo_Nomenclatore_Gruppi.Codice_Prova = dbo_Anag_Prove_Gruppi.Codice INNER JOIN
+                         dbo.Laboratori_Reparto AS dbo_Laboratori_Reparto_ConfProp ON dbo.Conferimenti.RepLab = dbo_Laboratori_Reparto_ConfProp.Chiave INNER JOIN
+                         dbo.Anag_Reparti AS dbo_Anag_Reparti_ConfProp ON dbo_Laboratori_Reparto_ConfProp.Reparto = dbo_Anag_Reparti_ConfProp.Codice INNER JOIN
+                         dbo.Laboratori_Reparto AS dbo_Laboratori_Reparto_ConfAcc ON dbo.Conferimenti.RepLab_Conferente = dbo_Laboratori_Reparto_ConfAcc.Chiave INNER JOIN
+                         dbo.Anag_Reparti AS dbo_Anag_Reparti_ConfAcc ON dbo_Laboratori_Reparto_ConfAcc.Reparto = dbo_Anag_Reparti_ConfAcc.Codice INNER JOIN
+                         dbo.Conferimenti_Finalita ON dbo.Conferimenti.Anno = dbo.Conferimenti_Finalita.Anno AND dbo.Conferimenti.Numero = dbo.Conferimenti_Finalita.Numero INNER JOIN
+                         dbo.Anag_Finalita AS dbo_Anag_Finalita_Confer ON dbo.Conferimenti_Finalita.Finalita = dbo_Anag_Finalita_Confer.Codice INNER JOIN
+                         dbo.Anag_TipoConf ON dbo.Conferimenti.Tipo = dbo.Anag_TipoConf.Codice AND dbo.Esami_Aggregati.Tipo_Pagamento = dbo.Anag_TipoConf.Codice INNER JOIN
+                         dbo.Anag_Tipo_Prel ON dbo.Conferimenti.Tipo_Prelievo = dbo.Anag_Tipo_Prel.Codice INNER JOIN
+                         dbo.Anag_Comuni ON dbo.Anag_Registri.Codice = dbo.Anag_Comuni.Codice INNER JOIN
+                         dbo.Anag_Tecniche ON dbo.Nomenclatore.Codice_Tecnica = dbo.Anag_Tecniche.Codice AND dbo_Nomenclatore_Gruppi.Codice_Tecnica = dbo.Anag_Tecniche.Codice
+WHERE        (dbo.Laboratori_Reparto.Laboratorio > 1) AND (dbo.Esami_Aggregati.Esame_Altro_Ente = 0) AND (dbo.Esami_Aggregati.Esame_Altro_Ente = 0) AND ({ fn YEAR(dbo.Conferimenti.Data_Accettazione) } = 2022) AND 
+                         (dbo.Anag_Registri.Descrizione IN ('Alimenti Uomo', 'Alimenti Zootecnici', 'Sanità Animale'))"
 
 
 
