@@ -11,6 +11,9 @@ dftaut <- df[tempi == "taut",] %>%
   .[,  fin := ifelse(count >1, "multifin", "onefin")] %>% 
   .[, c("numero", "repacc", "settore", "finprova", "in_out", "giorni")]
   
+
+
+
 library(plotrix)
 
 
