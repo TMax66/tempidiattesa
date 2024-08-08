@@ -1,16 +1,23 @@
 # analisi dati
 
-df <- read_feather("dtlongClean.feather") # <-  dataset preparato dalla query principale ( vedi preparazione dati.r)
+df <- read_fst(here("dati", "dtlongClean.fst")) # <-  dataset preparato dalla query principale ( vedi preparazione dati.r)
+ 
 
-df <- as.data.table(df)
+
+
+
+
+
 
 dftaut <- df[tempi == "taut",] %>%   
-  .[, c("numero", "settore", "giorni", "finprova", "in_out",  "repacc")] %>%   
+  .[, c("Numero", "settore", "giorni", "finprova", "in_out",  "repacc")] %>%   
   .[, distinct(.)] %>%  
-  .[, `:=`(count = .N), by = numero] %>% 
+  .[, `:=`(count = .N), by = Numero] %>% 
   .[,  fin := ifelse(count >1, "multifin", "onefin")] %>% 
-  .[, c("numero", "repacc", "settore", "finprova", "in_out", "giorni")]
+  .[, c("Numero", "repacc", "settore", "finprova", "in_out", "giorni")]
   
+
+
 
 
 
@@ -18,20 +25,24 @@ library(plotrix)
 
 
 dftaut %>% 
-  mutate(duplicati = duplicated(numero, .keep_all = TRUE)) %>%   
-  pivot_wider(names_from = in_out, values_from = in_out) %>% 
+  mutate(duplicati = duplicated(Numero, .keep_all = TRUE)) %>%    
+  pivot_wider(names_from = in_out, values_from = in_out) %>% View()
+  
   mutate(in_out = ifelse(!is.na(`in`) & is.na(out), "in",
-                         ifelse(is.na(`in`) & !is.na(out),"out", "out"))) %>%  
-  distinct(numero, .keep_all = TRUE) %>%
-  select(-finprova) %>%  
+                         ifelse(is.na(`in`) & !is.na(out),"out", "out"))) %>%   View()
+  
+
+
+  distinct(Numero, .keep_all = TRUE) %>%   
+  select(-finprova) %>%  View()
   group_by(repacc, settore, in_out) %>% 
   summarise(taut = mean(giorni), 
-            se = std.error(giorni), 
+            se = std.error(giorni, na.rm = TRUE), 
             inf = taut - se*1.97, 
-            sup = taut + se*1.97) %>% 
+            sup = taut + se*1.97) %>% View()
   
   ggplot()+
-  aes(x = repacc, y = taut, col = in_out)+
+  aes(x = repacc, y = taut, col = in_out)
     geom_pointrange(aes(ymin = inf, ymax = sup))+
     coord_flip()+
     facet_wrap(.~ settore, scales = "free")

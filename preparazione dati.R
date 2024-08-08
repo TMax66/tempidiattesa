@@ -1,58 +1,69 @@
-library(tidyverse)
-library(readr)
-library(readxl)
-library(openxlsx)
-library(here)
-library(lubridate)
-library(DBI)
-library(odbc)
-library(survival)
-library(data.table)
+# library(tidyverse)
+# library(readr)
+# library(readxl)
+# library(openxlsx)
+# library(here)
+# library(lubridate)
+# library(DBI)
+# library(odbc)
+# library(survival)
+# library(data.table)
+# library(fst)
 
+
+pkg()
 #connessione al dbase dei tempi di risposta----
 
 # con <- DBI::dbConnect(odbc::odbc(), Driver = "SQL Server", Server = "dbprod02", 
 #                          Database = "TempiDiRisposta", Port = 1433)
+# con <- DBI::dbConnect(odbc::odbc(), Driver = "SQL Server", Server = "dbprod02", 
+#                   Database = "IZSLER", Port = 1433)
 
 
+ 
 
-con <- DBI::dbConnect(odbc::odbc(), Driver = "SQL Server", Server = "dbprod02", 
-                      Database = "IZSLER", Port = 1433)
 source("sql.R")
 
+ conIZSLER <- DBI::dbConnect(odbc::odbc(), Driver = "SQL Server", Server = "dbprod02.izsler.it",
+                             Database = "IZSLER", Port = 1433)
 
-taut <- con %>% tbl(sql(queryTaut)) %>% as_tibble()
+
+
+
+taut <- conIZSLER %>% DBI::dbGetQuery( queryTaut)
+
+write_fst(taut, here("dati", "datiperizslerNet.fst"))
+
 
 
 #saveRDS(taut, file = "taut.RDS")
-write_feather(taut, "taut.feather")
+write_fst(taut, here("dati",  "taut.fst"))
 
 
-dati <- as.data.frame(read_feather("taut.feather"))
+dati <- read_fst(  here("dati", "taut.fst"))
+
+dati %>% 
+  mutate(chiaveVN = NA, 
+         prova = NA, 
+         codprova = NA) %>%   
+  filter(!is.na(chiaveVNgruppo), 
+         tecnica != "Calcolo") %>%  
+  distinct(chiaveVNgruppo, .keep_all = TRUE) %>%  
+  
+  bind_rows(
+    dati %>% 
+      filter(is.na(chiaveVNgruppo))
+  ) %>%  
+  mutate(vn = ifelse(is.na(chiaveVN), chiaveVNgruppo, chiaveVN)) -> dati
+  
+ # write_fst( here("dati", "analisi.fst"))
 
 
-# Questo codice serve per la simulazione dei centri di costo in /COGEPERF/app/app_costiricavi/R/Nuovo Controllo di Gestione
-# BGSOBIPV <- taut %>%
-#   filter(repacc %in% c( "Sede Territoriale di Bergamo",
-#                                "Sede Territoriale di Sondrio",
-#                                "Sede Territoriale di Binago",
-#                                "Sede Territoriale di Pavia")) %>%
-#   select(numero, settore, finalita, finprova, categprove, gruppo, prova, Tecnica,
-#          mp, Codice_Gruppo, Codice_Prova,Codice_Tecnica,Chiave, Codgruppo,COdprovaNMgruppi,
-#          CodTecnicaNMgruppi,ChiaveGruppi,
-#          repanalisi, labanalisi, nesami) %>% 
-#   saveRDS("bgsobipv.rds")
-
-
-
-#datix <- readRDS(file = "taut.RDS" )
-
-
-#questo codice definisce la singola prova/tecnica come out se è eseguita da un laboratorio di una struttura diversa dall'accettante
-# e come in se è eseguita in laboratori della stessa struttura
+# questo codice definisce la singola prova/tecnica come "out" se è eseguita da un laboratorio di una 
+# struttura diversa dall'accettante e come "in" se è eseguita in laboratori della stessa struttura
 
 dt <- dati %>% 
-  select(-c(31:39) ) %>% 
+ # select(-c(31:39) ) %>% 
   mutate(
     in_out = case_when(
       repacc != repanalisi ~ paste("out"), 
@@ -70,10 +81,10 @@ dt <- dati %>%
 # stracc2= abbreviate(stracc))  
 
 #saveRDS(dt, "dt.RDS")
-write_feather(dt, "dt.feather")
+write_fst(dt, here("dati",  "dt.fst"))
 
 #dt <- readRDS("dt.RDS")
-dt <- read_feather("dt.feather")
+dt <- read_fst(here("dati",  "dt.fst"))
 
 
 dtwide <- dt %>% 
@@ -88,9 +99,9 @@ dtwide <- dt %>%
     ttecnico = interval(dtinizio, dtfine)/ddays(1), 
     tsecuzione = interval(dtreg, dtfine)/ddays(1), 
     tesecuzionalt = interval(dtcarico, dtfine)/ddays(1),
-    taut = interval(dtconf, primoRdp)/ddays(1)
-  ) %>% 
-  write_feather("dtwide.feather")
+    taut = interval(dtconf, dtpRDP)/ddays(1)
+  ) %>%  
+  write_fst(here("dati","dtwide.fst"))
 
 
 
@@ -106,15 +117,15 @@ dtlong <- dt %>%
     ttecnico = interval(dtinizio, dtfine)/ddays(1), 
     tsecuzione = interval(dtreg, dtfine)/ddays(1), 
     tesecuzionalt = interval(dtcarico, dtfine)/ddays(1),
-    taut = interval(dtconf, primoRdp)/ddays(1)
-  ) %>%  
-  pivot_longer(cols = 32:43, names_to = "tempi", values_to = "giorni") %>%  
+    taut = interval(dtconf, dtpRDP)/ddays(1)
+  ) %>%   
+  pivot_longer(cols = 30:41, names_to = "tempi", values_to = "giorni") %>%   
   filter(giorni >= 0) %>% 
   as.data.table()
 
-write_feather(dtlong,  "dtlong.feather")
+write_fst(here("dati", "dtlong.fst"))
 
-dtlong <- read_feather("dtlong.feather")
+dtlong <- read_fst(here("dati", "dtlong.fst"))
 
 
 # questo codice calcola le statistiche di tutte le tipologie di tempi
@@ -132,9 +143,9 @@ stats <-
     "sd"          = sd(giorni, na.rm = T)), by = tempi]    
 
 #saveRDS(stats, file = "statisticheTempi.RDS")
-write_feather(stats, "stats.feather")
+write_fst(stats, here("dati","stats.fst"))
 
-stats <- read_feather("stats.feather")
+stats <- read_fst(here("dati", "stats.fst"))
 
 
 st <- stats %>% 
@@ -148,6 +159,6 @@ dtlongClean <- dtlong %>% as.data.table() %>%
   .[!is.na(giorni)|giorni >= 0 & giorni <= tetto,  ] # questo codice definisce per tutti i tempi il valore di tetto ( dato dal 
 # 98 percentile sopra selezionato), da usare come filtro per tagliare fuori dalle analisi valori estremi e rari
 
-write_feather(dtlongClean, "dtlongClean.feather")
+write_fst(dtlongClean, here("dati","dtlongClean.fst"))
 
 
