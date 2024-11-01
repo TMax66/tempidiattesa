@@ -24,7 +24,7 @@ pkg()
 
 source("sql.R")
 
- conIZSLER <- DBI::dbConnect(odbc::odbc(), Driver = "SQL Server", Server = "dbprod02.izsler.it",
+conIZSLER <- DBI::dbConnect(odbc::odbc(), Driver = "SQL Server", Server = "dbprod02.izsler.it",
                              Database = "IZSLER", Port = 1433)
 
 
@@ -32,15 +32,21 @@ source("sql.R")
 
 taut <- conIZSLER %>% DBI::dbGetQuery( queryTaut)
 
-write_fst(taut, here("dati", "datiperizslerNet.fst"))
+write_fst(taut, here("dati", "datiperIF.fst"))
+saveRDS(taut, here("dati", "datiperIF.RDS"))
 
+#write.csv(taut, here("dati", "datiperIF.csv"))
 
+dati <- readRDS(here("dati", "datiperIF.RDS"))
 
 #saveRDS(taut, file = "taut.RDS")
 write_fst(taut, here("dati",  "taut.fst"))
 
 
 dati <- read_fst(  here("dati", "taut.fst"))
+
+
+saveRDS(taut, here("dati", "datiperizslerNet.RDS"))
 
 dati %>% 
   mutate(chiaveVN = NA, 
@@ -67,13 +73,19 @@ dt <- dati %>%
   mutate(
     in_out = case_when(
       repacc != repanalisi ~ paste("out"), 
-      TRUE ~ paste("in"))) %>% 
-  mutate( # questo codice calcola il tempo di risposta condizionalmente al categoria in/out
-    #cosi come previsto dal sistema in uso
-    trisp = case_when(
-      in_out == "in" ~ interval(dtreg, dtfine)/ddays(1), 
-      TRUE~  (interval(dtcarico, dtfine)/ddays(1))
-    )) 
+      TRUE ~ paste("in")))
+  # mutate( # questo codice calcola il tempo di risposta condizionalmente al categoria in/out
+  #   #cosi come previsto dal sistema in uso
+  #   trisp = case_when(
+  #     in_out == "in" ~ interval(dtreg, dtfine)/ddays(1), 
+  #     TRUE~  (interval(dtcarico, dtfine)/ddays(1))
+  #   )) 
+
+#dt<-dt %>%  select(-trisp)
+
+saveRDS(dt, here("dati", "dati_tempi_izsler.RDS"))
+
+dt <- readRDS( here("dati", "dati_tempi_izsler.RDS"))
 
 
 
