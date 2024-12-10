@@ -1,8 +1,8 @@
 ---
-title: "Analisi dei tempi di attesa dell'utente"
-author: "controllo di gestione"
+title: "Definizione e analisi dei tempi di attesa dell'utente"
+author: "Controllo di Gestione"
 format:
-  html:
+   html:
     toc: true
       
 
@@ -16,9 +16,6 @@ dt <- read.csv("C:/Users/vito.tranquillo/Desktop/Git Projects/tempidiattesa/dati
 
 dt <- dt %>% rename("in_out" = in_sede)
 
-
-
-
 ```
 
 
@@ -26,7 +23,7 @@ dt <- dt %>% rename("in_out" = in_sede)
 
 
 ## Introduzione 
-In sanità pubblica i tempi di attesa dell'utenza sia  per l'esecuzione di analisi/esami di laboratorio in diagnostica sia per terapie, trattamenti ecc. è un importante indicatore di efficienza delle attività. 
+In sanità pubblica il tempo di attesa dell'utenza sia  per l'esecuzione di analisi/esami di laboratorio in diagnostica sia per terapie, trattamenti ecc. è un importante indicatore di efficienza delle attività. 
 
 IZSLER si è dotato da parecchi anni di due indicatori di tempistica dei processi analitici
 
@@ -34,25 +31,22 @@ IZSLER si è dotato da parecchi anni di due indicatori di tempistica dei process
 
 -tempi di firma
 
-Si tratta di due indicatori di processo ( come descritto nella figura 1) e non di outcome cioè di impatto sull'utenza. Cioè misurano i tempi  di esecuzione delle singole prove indipendentemente dalla tipologia e modalità con cui sono stati conferiti all'Istituto  e il tempo di firma che indaga la tempestività con cui i RDP a conclusione delle prove vengono resi disponibili dalla Dirigenza. 
+Si tratta di due indicatori di processo ( come descritto nella figura 1) che misurano i tempi  di esecuzione delle singole prove e il tempo di firma che indaga la tempestività con cui i RDP a conclusione delle prove vengono resi disponibili dalla Dirigenza. 
 
-L'utenza dell'Istituto conferisce i campioni all'interno di "pacchetti" discreti ( i conferimenti) che possono contenere da 1 a n campioni, su cui vengono richieste da 1 a n metodi di prova per finalità diverse, prove eseguite nello stesso laboratorio della struttura accettante che per lo stesso conferimento prove inviate ad altri laboratori dell'Istituto. 
+L'utenza dell'Istituto conferisce i campioni all'interno di "pacchetti" discreti ( i conferimenti) che possono contenere da 1 a n campioni, su cui vengono richieste da 1 a n metodi di prova per finalità diverse, con prove eseguite nello stesso laboratorio della struttura accettante e/o prove  inviate ad altri laboratori dell'Istituto. 
 
-Indicatori di impatto sugli stakholder rappresentano gli strumenti per la misurazione del Valore Pubblico verso  cui l'Istituto pianifica  le proprie attività attraverso il PIAO. Il tempo di attesa dell'utenza è un diretto indicatore di impatto il cui monitoraggio, la valutazione e lo scostamento da tempi di riferimento costiutuiscono un valido indicatore di efficienza di tipo gestionale.
+Gli indicatori di impatto sugli stakholders rappresentano gli strumenti per la misurazione del Valore Pubblico verso  cui l'Istituto pianifica  le proprie attività attraverso il PIAO. Il tempo di attesa dell'utenza è un diretto indicatore di impatto il cui monitoraggio, la valutazione e lo scostamento da tempi di riferimento potrebbero costituire un valido indicatore di efficienza di tipo gestionale.
 
-Il presente documento fornisce una definizione del tempo di attesa dell'utenza (TAUT), un'analisi degli ultimi 5 anni dell'andamento del TAUT e un confronto tra strutture e altre variabili d'interesse; analisi utili a sostenere la proposta del controllo di gestione dell'utilizzo di questo KPI nelle attività di programmazione e controllo. 
+Il presente documento fornisce una definizione del tempo di attesa dell'utenza (TAUT) e  un' analisi preliminare degli ultimi 5 anni dell'andamento del TAUT con  un confronto tra alcune strutture e altre variabili d'interesse; analisi preliminare utile a sostenere la proposta del Controllo di Gestione dell'utilizzo di questo KPI nelle attività di programmazione e controllo. 
 
 
 ## Definizione del tempo di attesa dell'utente in IZSLER
-
- 
 
 Di seguito uno schema che riassume le fasi del processo a cui sottostanno i campioni sottoposti ad analisi per le diverse motivazioni/finalità in tutto l'IZSLER:
 
  
 ```{r echo=FALSE, fig.align = "center",out.width = '90%', }
 knitr::include_graphics("figure/taut.png")
-
 ```
 
 
@@ -62,34 +56,30 @@ Ad ogni singolo conferimento sono associate i seguenti eventi/tempi:
 
 **t1-data di conferimento** alle sezioni (sedi o periferia) del campione/campioni. 
 
-**t1-t0** : tempo di circolazione esterno del campione. Questo intervallo di tempo non è dipendente dalle azioni dell'Istituto ma è comunque importante da tenere sottocontrollo in quanto rappresenta il tempo in cui il campione deve essere adeguatamente conservato ( pena la non idoneità del campione) ed è una misura della capacità organizzativa del conferente soprattutto quando si tratta dell'Autorità Sanitaria.  E' un intervallo di tempo che comunque influisce sulla percezione di "attesa" dell'utenza, dilatando il tempo di attesa dell'utenza.
+**t1-t0** : tempo di circolazione esterno del campione. Sebbene questo intervallo di tempo non è dipendente dalle azioni dell'Istituto è critico in quanto può influenzare l'idoneità del campione; inoltre influisce sulla percezione di "attesa" dell'utenza. 
 
-A t1 il campione viene "accettato" previa verifica delle condizioni di idoenità da parte del personale dell'accettazione; ne viene misurata dove previsto la temperatura di conservazione/trasporto da parte del conferente e quindi stoccato a temperatura ambiente/refrigerato/congelato a seconda della natura del campione e degli esami richiesti, per il tempo necessario alle attività di registrazione/programmazione e quindi di analisi.
+A t1 il campione viene "accettato" previa verifica delle condizioni d'idoenità da parte del personale dell'accettazione; ne viene misurata dove previsto la temperatura di conservazione/trasporto da parte del conferente e quindi stoccato a temperatura ambiente/refrigerato/congelato a seconda della natura del campione e degli esami richiesti, per il tempo necessario alle attività di registrazione/programmazione e quindi di analisi.
 
-**t2- data di registrazione/programmazione del conferimento** :  è la data in cui il personale dell'accettazione IZSLER registra nel sistema Darwin le informazioni relative al conferimento ed effettua la programmazione degli esami che saranno eseguiti nei laboratori. Il sistema automaticamente assegna il numero di conferimento e la data di registrazione. In questa fase il personale dell'accettazione assegna allo stesso conferimento una o più finalità o motivi del prelievo. Ad ogni finalità è associata una o più prove. 
+**t2- data di registrazione/programmazione del conferimento** :  è la data in cui il personale dell'accettazione IZSLER registra nel sistema informatico del laboratorio (Darwin/Sigla) le informazioni relative al conferimento ed effettua la programmazione degli esami che saranno eseguiti nei laboratori. Il sistema automaticamente assegna il numero di conferimento e la data di registrazione. In questa fase il personale dell'accettazione assegna allo stesso conferimento una o più finalità o motivi del prelievo. Ad ogni finalità è associata una o più prove. 
 
 **t2x- data inserimento riga di programmazione**: questa data/ora registra il momento dell'inserimento della programmazione della prova. 
 
 
+**t2-t1**: questo intervallo di tempo  , in genere molto breve, è una misura dell'attività del personale di accettazione e del sistema di organizzazione in essere, contribuisce al più ampio tempo di circolazione interno del campione. In questo intervallo di tempo il conferimento dovrebbe essere conservato opportunamente in base alle sue caratteristiche. In questo intervallo di tempo il conferimento non è ancora entrato nel sistema e l'unica modalità di corretto tracciamento è il documento di accompagnamento
 
-**t2-t1**: questo intervallo di tempo , in genere molto breve, è una misura dell'attività del personale di accettazione e del sistema di organizzazione in essere, contribuisce al più ampio tempo di circolazione interno del campione. In questo intervallo di tempo il conferimento dovrebbe essere conservato opportunamente in base alle sue caratteristiche. In questo intervallo di tempo il conferimento non è difatti ancora entrato nel sistema e l'unica modalità di corretto tracciamento è il documento di accompagnamento, comprende anche t2x
-
-**t2-t2x**: questo intervallo di tempo registra misura tempo tra la data di registrazione del conferimento e la data d'inserimento delle stringhe di programmazione.
-
-
-A questo punto del processo il conferimento in base alla/alle finalità e soprattutto agli esami programmati subisce differenti destini che comporta differenti tempistiche. Di seguito i differenti scenari:
-
-1. Lo scenario più semplice prevede che gli esami vengano eseguiti nella stessa struttura accettante che risulta proprietaria del conferimento. Per ognuna delle  prove previste dalla programmazione viene registrata la data d'inzio (t3 nello schema) e di fine analisi (t4). 
-
-2. E'sufficiente che una singola prova prevista nella programmazione   sia eseguita in un laboratorio differente dai laboratori presenti nella struttura accettante, che il conferimento assuma un carattere diverso e particolare ai fini del monitoraggio dei tempi del processo e in particolare per la definizione del tempo di attesa dell'utenza. 
-In questo caso prima della registrazione del t3 sono previste altri due tempi: 
-t2a - data d'invio del/dei campione/i  e t2b - data di presa in carico da parte del laboratorio che eseguirà l'analisi. Il sistema non prevede la registrazione della data di arrivo del campione alla struttura di destinazione, spesso arrivo e presa in carico coincidono ma non è sempre cosi. 
+**t2-t2x**: questo intervallo di tempo registra misura tempo tra la data di registrazione del conferimento e la data d'inserimento delle stringhe di programmazione e coincide con l'intervallo t2-t1 quando la programmazione avviene in fase di registrazione (situazione molto frequente)
 
 
-In entrambi gli scenari è possibile identificare il *tempo di circolazione interno* o *tempo organizzativo del conferimento* rappresentato dall'intervallo t3-t2, comprensivo anche del tempo **t2-t2x**
-( risulta interessante anche monitorare il tempo tra l'inserimento della stringa di programmazione t2x e l'inizio analisi t3)
+A questo punto del processo i campioni del  conferimento in base alla/alle finalità e soprattutto agli esami programmati subisce differenti destini che comporta differenti tempistiche. Di seguito i differenti scenari:
 
-Teoricamente è atteso che il tempo di circolazione interno sia più breve nel caso dello scenario 1 rispetto allo scenario 2. In questo caso i differenti tempi sopra definiti permettono di studiare tre intervalli di tempo parziali: 
+1. Lo scenario più semplice prevede che per tutti i campioni gli esami vengano eseguiti nella stessa struttura accettante che risulta proprietaria del conferimento. Per ognuna delle  prove previste dalla programmazione viene registrata la data d'inzio (t3 nello schema) e di fine analisi (t4). 
+
+2. E' sufficiente che una singola prova prevista nella programmazione su uno o pià campioni,  sia eseguita in un laboratorio differente dai laboratori presenti nella struttura accettante, che il conferimento assuma un carattere diverso e particolare ai fini del monitoraggio dei tempi del processo e in particolare per la definizione del tempo di attesa dell'utenza. 
+
+In questo caso prima dell'inizio delle prove  sono previste altri due tempi: 
+t2a - data d'invio del/dei campione/i  e t2b - data di presa in carico da parte del laboratorio che eseguirà l'analisi. Il sistema informatico di laboratorio Darwin non prevede la registrazione della data di arrivo del campione alla struttura di destinazione, spesso arrivo e presa in carico coincidono ma non è sempre cosi. La registrazione della data di arrivo è invece prevista nel nuovo sistema informatico SIGLA
+
+In questo scenario  i differenti tempi sopra definiti permettono di studiare tre intervalli di tempo parziali: 
 
 t2a-t2 : **tempo di allestimento/confezionamento** dei campioni destinati ad altri laboratori
 
@@ -104,23 +94,38 @@ Il **tempo di trasporto** è dipendente dall'organizzazione dei mezzi interni de
 
 Il **tempo di sosta del campione** è dipendente dal laboratorio che riceve dalla struttura periferica il campione da esaminare
 
+
+**t3** : data inizio analisi
+
+**t4** : data fine analisi
+
+t4-t3: questo intervallo di tempo indica il tempo tecnico per l'esecuzione dell'analisi 
+
+
+In entrambi gli scenari è possibile identificare il *tempo di circolazione interno* o *tempo organizzativo del conferimento* rappresentato dall'intervallo t3-t2, comprensivo anche del tempo **t2-t2x**
+
+
+Teoricamente è atteso che il tempo di circolazione interno sia più breve nel caso dello scenario 1 rispetto allo scenario 2. 
+
 <!-- l'ultimo tempo parziale è totalmente a carico della struttura che eseguirà la prova. -->
 
 
 Esiste un terzo scenario che per dinamica è totalmente simile allo scenario dei conferimenti con prove per altri laboratori ma che presuppone una responsabilità differente della struttura inviante: è il caso dei conferimenti che vengono accettati spesso registrati ma a volte anche no, in un laboratorio ma le cui prove sono eseguite in un altro laboratorio a cui viene trasferita la proprietà del conferimento e quindi la responsabilità dell'emissione del rapporto di prova. In questo caso il laboratorio inviante è responsabile, ai fini della definizione del tempo di attesa dell' utente, solo del tempo che impiega a gestire il conferimento , a prepararlo e inviarlo al laboratorio di destinazione.
 
 
-Infine ultimo tempo è rappresentato dalla data di emissione del primo rapporto di prova firmato (t5). Questo tempo rappresenta il primo feedback che l'utenza ottiene dal momento che ha consegnato i campioni al laboratorio IZSLER. 
+
+**t5** rappresenta la data di emissione del primo rapporto di prova completo firmato. Questo tempo rappresenta il  feedback che l'utenza ottiene dal momento che ha consegnato i campioni al laboratorio IZSLER. 
 
 <!-- Si fa riferimento qui solo ai conferimenti completi e non parziali, ai fini della definizione del tempo di attesa dell'utenza.  -->
 
-L'intervallo di tempo(t5-t4), è calcolato utilizzando tra le prove previste dal conferimento quella che ha il maggior intervallo tra data inizio e data fine analisi. 
+
+ 
 
 
-**Tempo di attesa dell'utenza**: sulla base del processo illustrato sopra , dei tempi che intervengono e considerando come unità di osservazione il conferimento,  definiamo il tempo di attesa dell'utenza come il tempo che intercorre tra la data di consegna del/dei campioni a una qualsiasi accettazione IZSLER e la data di emissione del primo RDP firmato. 
+**Tempo di attesa dell'utenza**: sulla base del processo illustrato sopra , dei tempi che intervengono e considerando come unità di osservazione il conferimento,  definiamo il tempo di attesa dell'utenza come il tempo che intercorre tra la data di consegna del/dei campioni a una qualsiasi accettazione IZSLER e la data di emissione del primo RDP firmato. E' rappresentato quindi dall'intervallo di tempo t5-t1.
 
 Questa definizione corrisponde al tempo in giorni che _realmente_ l'utente attende per la restituzione dei risultati di analisi per cui ha chiesto la prestazione dei laboratori IZSLER. 
-E' possibile definire anche un TAUT più dilatato come tempo di attesa Percepito dall'utenza se nella definizione di cui sopra si considera anche il tempo di circolazione esterno (di cui l'Istituto non è responsabile e non ha in mano le leve per controllarlo, ma che può monitorarlo, analizzarlo e restituire all'utenza i risultati di tale analisi al fine di migliorare la programmazione dei processi di campionamento) e i giorni non lavorativi. A questo proposito è bene ricordare che l'importanza di alcuni esiti relativi a derrate deperibili va oltre la definizione "amministrativa" di un tempo di risposta che non includa i giorni non lavorativi.
+E' possibile definire anche un TAUT più dilatato come tempo di attesa percepito dall'utenza se nella definizione di cui sopra si considera anche il tempo di circolazione esterno  e i giorni non lavorativi. A questo proposito è bene ricordare  l'importanza della tempestività di  alcuni esiti relativi a derrate deperibili va oltre la definizione "amministrativa" di un tempo di risposta che non includa i giorni non lavorativi.
 
 Dalla definizione di TAUT ne deriva che può essere utilizzata come KpI delle strutture che accettano i campioni - indipendentemente dal fatto che poi vengano processati e le anali eseguiti in sede- in quanto punto di contatto tra utenza e IZSLER. Per le strutture che invece eseguono l'attività analitica prevalentemente su campioni provenienti dalle strutture accettanti, non è possibile utilizzare il TAUT come KpI. Per queste realtà è necessario utilizzare altri intervalli temporali che misurano in modo adeguato l'efficienza di processo del laboratorio come ad esempio l'intervallo tra la data di conferma dei risultati e la data di arrivo in laboratorio (attualmente la data di arrivo non è registrata sistematicamente nel sistema Darwin, al contrario di quanto dovrebbe accadere nel sistema Sigla ). 
 
@@ -133,9 +138,8 @@ Utilizzando i dati di attività dei laboratori nel periodo 2019-2023 è stato de
 
 2. TAUT per i conferimenti che hanno almeno una prova programmata ed eseguita in una struttura differente da quella accettante
 
-Le due metriche sono state  valutate separatamente anche per conferimenti con una sola finalità e conferimenti multifinalità
 
-Per i diversi scenari la variabilità del TAUT è stata analizzata rispetto all'andamento negli anni, in base al mese e al giorno della settimana; al tipo di conferimento (ufficiale/non ufficiale) .....
+Per i diversi scenari la variabilità del TAUT è stata analizzata rispetto all'andamento negli anni, in base al mese e al giorno della settimana; al tipo di conferimento (ufficiale/non ufficiale) e per le diverse strutture appartenenti ai dipartimenti territoriali ( sezioni diagnostiche)
 
 I tempi di attesa sono misurati in giorni lavorativi, sono quindi esclusi le domeniche e tutti i giorni festivi dell'anno. 
 
@@ -145,7 +149,7 @@ I tempi di attesa sono misurati in giorni lavorativi, sono quindi esclusi le dom
 Per i conferimenti con prove **in** il tempo di attesa medio/annuo  è pari a 2.19 gg mentre è di 7.5 gg per i conferimento con prove **out**. 
 Se consideriamo la media come tempo di riferimento risulta che in IZSLER il 69% dei conferimenti con prove **in** ha tempi di attesa inferiori o uguali a 2.19 gg, mentre il 67% dei conferimenti con prove **out** ha tempi di attesa inferiori o uguali a 7.5 gg. 
 
-Nella tabella sottostante sono riportate le statistiche descrittive dei tempi di attesa dell'utenza dal 2018 al 2024 (dati estratti a Settembre) dei conferimenti suddivisi tra i conferimenti le cui prove richieste sono tutte eseguite in laboratori della struttura accettante e i conferimenti che hanno almeno una prova inviata a laboratori di altre strutture.
+Nella tabella sottostante sono riportate le statistiche descrittive dei tempi di attesa dell'utenza dal 2019 al 2024 (dati estratti a Settembre) dei conferimenti suddivisi tra i conferimenti le cui prove richieste sono tutte eseguite in laboratori della struttura accettante e i conferimenti che hanno almeno una prova inviata a laboratori di altre strutture.
 
 
 ```{r echo=FALSE, fig.align = "center",out.width = '90%', message=FALSE}
@@ -177,7 +181,7 @@ Nella tabella sottostante sono riportate le statistiche descrittive dei tempi di
 #   group_by(in_out) %>%
 #     summarise(tg_ris = sum(in_tg),
 #               n = n()) %>%
-#   mutate("%" = round(100*tg_ris/n, 1)) %>%
+#   mutate("%" = round(100*tg_ris/n, 1)) questo codice serve a calcolare la % di conferimenti con tatu inferiore alla media d'istituto
 #   
 
  
@@ -215,13 +219,13 @@ Come si può osservare il tempo medio di attesa dei conferimenti "out" è sistem
 
 Di seguito i risultati relativi ai tempi di attesa nelle sedi territoriali della Lombardia e dell'Emilia Romagna. 
 
-Nella seguente tabella sono riportati i dati della media e deviazione standard del TAUT nel periodo 2019-2024 (dati aggiornati al 23/10) suddivisi in conferimenti con prove in e prove out.
+Nella seguente tabella sono riportati i dati della media e deviazione standard del TAUT nel periodo 2022-2023 (dati aggiornati al 23/10) suddivisi in conferimenti con prove in e prove out.
 
 ```{r echo=FALSE, fig.align = "center",out.width = '90%', message=FALSE}
  
  dt %>% 
   filter( dtconf_day != "Sunday",
-    anno_conferimento >= 2019,
+    anno_conferimento %in% c(2022, 2023),
          # in_sede == "in", 
          str_detect(repacc, "Sede"), 
          repacc != "Sede Territoriale di Milano (IS)") %>%  
@@ -236,18 +240,19 @@ Nella seguente tabella sono riportati i dati della media e deviazione standard d
     ) %>%   
   mutate("mediasd" = paste(media_taut, "(", stdev, ")")) %>%    
    
-  select(anno_conferimento, repacc, in_out, mediasd) %>% 
+  select(anno_conferimento, Sede=repacc  , in_out, mediasd) %>% 
   pivot_wider(names_from = anno_conferimento, values_from = mediasd) %>%  
  
   flextable() %>% 
   colformat_double(digits = 1) %>% 
-   merge_v(j = ~ repacc) %>% 
+   merge_v(j = ~ Sede) %>% 
   width(1, width = 2.5) %>% 
-  width(3:8, width = 1.2)
+  width(3:4, width = 1.2)
 
 ```
 
- 
+
+
 
 ### Media e dev.std  del tempo di attesa dell'utenza per Settore
 
@@ -257,6 +262,7 @@ Nella seguente tabella sono riportati i dati della media e deviazione standard d
   
   filter( 
     anno_conferimento >= 2019,
+ 
     dtconf_day != "Sunday",
     str_detect(repacc, "Sede"), 
     repacc != "Sede Territoriale di Milano (IS)") %>%  
@@ -278,8 +284,8 @@ Nella seguente tabella sono riportati i dati della media e deviazione standard d
   flextable() %>% 
   colformat_double(digits = 1) %>% 
   merge_v(j = ~ settore) %>% 
-  width(1, width = 2.3) %>% 
-  width(3:8, width = 1.2)
+  width(1, width = 1.3) %>% 
+  width(3:8, width = 1.8)
 
 ```
 
@@ -310,7 +316,7 @@ Nella seguente tabella sono riportati i dati della media e deviazione standard d
   flextable() %>% 
   colformat_double(digits = 1) %>% 
     merge_v(j = ~ Tipoprel) %>% 
-  width(1, width = 2.3) %>% 
+  width(1, width = 1.3) %>% 
   width(3:8, width = 1.2)
 
 ```
@@ -318,12 +324,45 @@ Nella seguente tabella sono riportati i dati della media e deviazione standard d
  
 ### Media e dev.std  del tempo di attesa dell'utenza per mese di conferimento 
 
+<!-- ```{r echo=FALSE,  message=FALSE} -->
+
+<!--  dt %>%  -->
+<!--   mutate(mese = as.factor(month(dtconf) )) %>%  -->
+<!--     filter(  -->
+<!--     anno_conferimento %in%c(2022, 2023), -->
+<!--     dtconf_day != "Sunday", -->
+<!--     str_detect(repacc, "Sede"),  -->
+<!--     repacc != "Sede Territoriale di Milano (IS)") %>%    -->
+<!--   group_by(anno_conferimento, mese, in_out) %>%  -->
+<!--   summarise(  -->
+<!--     media_taut = round(mean(tempo_attesa_feriali, na.rm = T), 1), -->
+<!--     stdev = round(sd(tempo_attesa_feriali, na.rm = T), 1), -->
+<!--     min = min(tempo_attesa_feriali, na.rm = TRUE),  -->
+<!--     max = max(tempo_attesa_feriali, na.rm = TRUE),  -->
+<!--     mediana = median(tempo_attesa_feriali, na.rm= TRUE),  -->
+<!--       nconf = n() -->
+<!--     ) %>%    -->
+<!--    mutate("mediasd" = paste(media_taut, "(", stdev, ")")) %>%     -->
+
+<!--   select(anno_conferimento, mese, in_out,  mediasd) %>%  -->
+<!--   pivot_wider(names_from = mese, values_from = mediasd ) %>%   -->
+
+<!--   flextable() %>%  -->
+<!--   colformat_double(digits = 1) %>%  -->
+<!--     merge_v(j = ~ anno_conferimento) %>%  -->
+<!--   width(1, width = 0.5) %>%  -->
+<!--   width(3:14, width = 4) -->
+
+<!-- ``` -->
+
+Nel grafico sottostante l'andamento del TAUT nei diversi mesi del 2022 e del 2023
+
 ```{r echo=FALSE, fig.align = "center",out.width = '90%', message=FALSE}
  
  dt %>% 
   mutate(mese = as.factor(month(dtconf) )) %>% 
     filter( 
-    anno_conferimento >= 2019,
+    anno_conferimento %in% c(2022, 2023),
     dtconf_day != "Sunday",
     str_detect(repacc, "Sede"), 
     repacc != "Sede Territoriale di Milano (IS)") %>%   
@@ -338,29 +377,72 @@ Nella seguente tabella sono riportati i dati della media e deviazione standard d
     ) %>%   
    mutate("mediasd" = paste(media_taut, "(", stdev, ")")) %>%    
    
-  select(anno_conferimento, mese, in_out,  mediasd) %>% 
-  pivot_wider(names_from = anno_conferimento, values_from = mediasd ) %>%  
- 
-  flextable() %>% 
-  colformat_double(digits = 1) %>% 
-    merge_v(j = ~ mese) %>% 
-  width(1, width = 2.3) %>% 
-  width(3:8, width = 1.2)
+  select(anno_conferimento, mese, in_out,  media_taut) %>% 
+  
+  ggplot()+
+  aes(x = mese, y =media_taut, color = as.factor(anno_conferimento))+
+  
+  facet_wrap(~ in_out)+
+  geom_line(aes(group= as.factor(anno_conferimento)))+geom_point()+ 
+  theme_bw()+
+  labs(y = "TAUT ( media)")+
+  theme(legend.title = element_blank())
+  
 
 ```
-
 
 ### Media e dev.std  del tempo di attesa dell'utenza per giorno di conferimento
 
 ```{r echo=FALSE, fig.align = "center",out.width = '90%', message=FALSE}
+ # 
+ # dt %>% 
+ #  mutate(dtconf_day = factor(dtconf_day,  levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))) %>% 
+ #    filter( 
+ #    anno_conferimento %in% c(2022, 2023),
+ #    dtconf_day != "Sunday",
+ #    str_detect(repacc, "Sede"), 
+ #    repacc != "Sede Territoriale di Milano (IS)") %>%   
+ #  group_by(anno_conferimento, dtconf_day, in_out) %>% 
+ #  summarise( 
+ #    media_taut = round(mean(tempo_attesa_feriali, na.rm = T), 1),
+ #    stdev = round(sd(tempo_attesa_feriali, na.rm = T), 1),
+ #    min = min(tempo_attesa_feriali, na.rm = TRUE), 
+ #    max = max(tempo_attesa_feriali, na.rm = TRUE), 
+ #    mediana = median(tempo_attesa_feriali, na.rm= TRUE), 
+ #      nconf = n()
+ #    ) %>%   
+ #   mutate("mediasd" = paste(media_taut, "(", stdev, ")")) %>%    
+ #   
+ #  select(anno_conferimento, dtconf_day, in_out,  mediasd) %>% 
+ #  pivot_wider(names_from = dtconf_day, values_from = mediasd ) %>%  
+ # 
+ #  flextable() %>% 
+ #  colformat_double(digits = 1) %>% 
+ #    merge_v(j = ~ anno_conferimento) %>% 
+ #  width(1, width = 2.3) %>% 
+ #  width(3:8, width = 2.4)
+
+```
+
+Andamento del tempo medio di attesa per giorno della settimana di consegna dei campioni
+
+```{r echo=FALSE, fig.align = "center",out.width = '90%', message=FALSE}
  
  dt %>% 
-  mutate(dtconf_day = factor(dtconf_day,  levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))) %>% 
+  mutate(dtconf_day = factor(dtconf_day,  levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")), 
+         dtconf_day = recode(dtconf_day, 
+                             "Monday" = "Lun", 
+                             "Tuesday" = "Mar", 
+                             "Wednesday" = "Merc", 
+                             "Thursday" = "Giov", 
+                             "Friday" = "Ven", 
+                             "Saturday" = "Sab", 
+                             "Sunday" = "Dom")) %>% 
     filter( 
-    anno_conferimento >= 2019,
-    dtconf_day != "Sunday",
+    anno_conferimento %in% c(2022, 2023),
+    dtconf_day != "Dom",
     str_detect(repacc, "Sede"), 
-    repacc != "Sede Territoriale di Milano (IS)") %>%   
+    repacc != "Sede Territoriale di Milano (IS)") %>%     
   group_by(anno_conferimento, dtconf_day, in_out) %>% 
   summarise( 
     media_taut = round(mean(tempo_attesa_feriali, na.rm = T), 1),
@@ -370,17 +452,18 @@ Nella seguente tabella sono riportati i dati della media e deviazione standard d
     mediana = median(tempo_attesa_feriali, na.rm= TRUE), 
       nconf = n()
     ) %>%   
-   mutate("mediasd" = paste(media_taut, "(", stdev, ")")) %>%    
+     
    
-  select(anno_conferimento, dtconf_day, in_out,  mediasd) %>% 
-  pivot_wider(names_from = anno_conferimento, values_from = mediasd ) %>%  
- 
-  flextable() %>% 
-  colformat_double(digits = 1) %>% 
-    merge_v(j = ~ dtconf_day) %>% 
-  width(1, width = 2.3) %>% 
-  width(3:8, width = 1.2)
-
+  select(anno_conferimento, dtconf_day, in_out,  media_taut) %>%   
+  
+  ggplot()+
+  aes(x = dtconf_day, y =media_taut, color = as.factor(anno_conferimento))+
+  
+  facet_wrap(~ in_out)+
+  geom_line(aes(group= as.factor(anno_conferimento)))+geom_point()+
+  theme_bw()+
+  theme(legend.title = element_blank())+
+  labs(y = "TAUT ( media)", x = "giorno del conferimento")
 ```
 
 
@@ -389,10 +472,10 @@ Nella seguente tabella sono riportati i dati della media e deviazione standard d
 
 Il tempo di attesa può essere utilizzato come indicatore di efficienza di processo specifico per singola struttura e, una volta definito un range  di accettabilità rispetto ad valore di riferimento/target 
 è possibile costruire una carta di controllo. 
-A titolo di esempio prendiamo in considerazione l'attività settimanale della  Sede Territoriale di Brescia nel 2024 distinte per conferimenti con prove **in** e prove **out** utilizzando come area di controllo quella costruita con il valore di taut medio/anno +/- 2 deviazioni standard. 
+A titolo di esempio prendiamo in considerazione l'attività settimanale della  Sede Territoriale di Brescia nel 2024 distinte per conferimenti con prove **in** e prove **out** utilizzando come area di controllo quella costruita con il valore di taut medio/anno +/- 2 deviazioni standard di tutte le strutture.
 
 
-```{r echo=FALSE, fig.align = "center",out.width = '90%', message=FALSE}
+```{r echo=FALSE, fig.align = "center",out.width = '90%', message=FALSE, warning= FALSE}
  
  dt %>% 
   mutate(dtconf_day = factor(dtconf_day,  levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")),
@@ -438,9 +521,141 @@ ylim(0, 15)+
   geom_segment(aes(x=0,xend=week,y=ifelse(in_out == "in", 2.19, 7.5),yend=ifelse(in_out == "in", 2.19, 7.5)), color='blue', linetype=1,size=0.2)+
    geom_segment(aes(x=0,xend=week,y=ifelse(in_out == "in", 1.01,6.76),yend=ifelse(in_out == "in", 1.01,6.76)), color='red', linetype=1,size=0.2, alpha = 0.3)+
    geom_segment(aes(x=0,xend=week,y=ifelse(in_out == "in", 3.37,8.24),yend=ifelse(in_out == "in", 3.37,8.24)), color='red', linetype=1,size=0.2, alpha = 0.3)+
-   labs(y = "media settimanale del tempo di attesa dell'utenza", title = "carta di controllo delle medie settimanli del tempo di attesa utenza per conferimenti accettati dalla Sede Territoriale di Brescia nel 2024")
+   labs(y = "giorni", subtitle = "Carta di controllo delle medie settimanali del tempo di attesa utenza
+per conferimenti accettati dalla Sede Territoriale di Brescia nel 2024")+
+   theme_bw()+
+   theme(plot.subtitle=element_text(size=10,  color="blue"))
+   
 
 ```
+
+
+Come si può osservare per i conferimenti le cui prove sono tutte eseguite nei laboratori della Sede Territoriale di Brescia per tutte le settimane del 2024 il tempo di attesa è sostanzialmente in controllo; a parte tre punti che si collocano sopra la linea superiore negli altri casi il tempo di attesa varia entro due deviazioni standard dalla media delle strutture dei dipartimenti territoriali. Al contrario nel caso di conferimenti "out" il tempo di attesa medio settimanale è risultato molto variabile; nella prima parte dell'anno mostra da  buone ad ottime performance con settimane al di sotto del limite inferiore a cui segue nel periodo primavera-estate tempi ampiamente al di sopra del limite superiore per poi tornare nell'utima parte dell'anno a livelli fisiologici o ottimali.
+
+L'analisi dei differenti tempi di processo dei conferimenti "fuori controllo" diventa quindi uno strumento di approfondimento per individuare le criticità alla base dei risultati osservati nella carta di controllo. 
+
+
+Di seguito a titolo di confronto,  la carta di controllo del tempo di attesa realtivamente alla Sede Territoriale di Bergamo per i conferimenti del 2024
+
+```{r echo=FALSE, fig.align = "center",out.width = '90%', message=FALSE, warning= FALSE}
+ 
+ dt %>% 
+  mutate(dtconf_day = factor(dtconf_day,  levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")),
+         
+         week = week(dtconf)
+         
+         ) %>% 
+    filter( 
+    anno_conferimento == 2024,
+    dtconf_day != "Sunday",
+    repacc == "Sede Territoriale di Bergamo") %>%  
+    group_by(week, in_out) %>% 
+  summarise( 
+    media_taut = round(mean(tempo_attesa_feriali, na.rm = T), 1),
+    stdev = round(sd(tempo_attesa_feriali, na.rm = T), 1),
+      nconf = n()
+    ) %>%   
+   #mutate("mediasd" = paste(media_taut, "(", stdev, ")")) %>%    
+   
+  select(week, in_out,  media_taut) -> time_cc
+
+
+in_x <-  2.19
+in_xmin  <- 2.19 - 2*0.59
+in_xmax  <- 2.19 + 2*0.59
+
+out_x <- 7.5
+out_min <- 7.5 - 2*0.37
+out_max <- 7.5 + 2*0.37
+
+
+limiti <- tibble("in_out" = c(rep("in", 3), rep("out", 3)), 
+                 parametro = c(c("x_in", "xmin_in", "xmax_in"), c("x_in", "xmin_in", "xmax_in")), 
+                 value = c(in_x, in_xmin, in_xmax, out_x, out_min, out_max))
+
+
+ ggplot(time_cc)+
+   aes(x = week, y = media_taut) + 
+  geom_point()+
+  geom_line(linetype=1, size=0.2)+ 
+   facet_wrap(~ in_out)+
+ylim(0, 15)+
+  geom_segment(aes(x=0,xend=week,y=ifelse(in_out == "in", 2.19, 7.5),yend=ifelse(in_out == "in", 2.19, 7.5)), color='blue', linetype=1,size=0.2)+
+   geom_segment(aes(x=0,xend=week,y=ifelse(in_out == "in", 1.01,6.76),yend=ifelse(in_out == "in", 1.01,6.76)), color='red', linetype=1,size=0.2, alpha = 0.3)+
+   geom_segment(aes(x=0,xend=week,y=ifelse(in_out == "in", 3.37,8.24),yend=ifelse(in_out == "in", 3.37,8.24)), color='red', linetype=1,size=0.2, alpha = 0.3)+
+   labs(y = "giorni", subtitle = "Carta di controllo delle medie settimanli del tempo di attesa utenza
+per conferimenti accettati dalla Sede Territoriale di Bergamo nel 2024")+
+ theme_bw()+
+theme(plot.subtitle=element_text(size=10,  color="blue"))
+
+```
+
+
+Rispetto alla Sede Territoriale di Brescia, le performance di Bergamo sono nettamente migliori sia per i conferimenti "in" che per i conferimenti "out" dove ci sono solo 6 punti fuori controllo rispetto ai 13 registrati nella sede di Brescia.
+Si conferma la sistematica differenza tra i conferimenti "in" e "out"  già evidenziata nelle tabelle descrittive e che verosimilmente riflette una condizione di normalità strutturale dovuta alle ovvie tempistiche necessarie per il trasporto dei campioni in altre sedi.
+Ma come è possibile vedere sia all'interno della stessa struttura che nel confronto i laboratori sono comunque in grado di garantire performance buone/ottimali per i conferimenti out.
+
+
+Di seguito la carta di controllo dei tempi di attesa medi settimanali della Sede Territoriale di Bologna. Rispetto alle precedenti sedi si può notare che per i conferimenti **in**, durante l'anno, le performance risultano sufficientemente adeguate in quanto sempre in controllo ma con valori sistematicamente sopra la media con circa 10 punti sopra il limite. Per i conferimenti **out** il pattern è completamente diverso da quello visto per le altre sedi. C'è una forte componente ciclica con un evidente  trend  al miglioramento  delle performance che dalla 30 settimana in poi si stabilizza su performance più che ottimali (tempi inferiori a limite inferiore)
+
+```{r echo=FALSE, fig.align = "center",out.width = '90%', message=FALSE, warning= FALSE}
+ 
+ dt %>% 
+  mutate(dtconf_day = factor(dtconf_day,  levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")),
+         
+         week = week(dtconf)
+         
+         ) %>% 
+    filter( 
+    anno_conferimento == 2024,
+    dtconf_day != "Sunday",
+    repacc == "Sede Territoriale di Bologna") %>%  
+    group_by(week, in_out) %>% 
+  summarise( 
+    media_taut = round(mean(tempo_attesa_feriali, na.rm = T), 1),
+    stdev = round(sd(tempo_attesa_feriali, na.rm = T), 1),
+      nconf = n()
+    ) %>%   
+   #mutate("mediasd" = paste(media_taut, "(", stdev, ")")) %>%    
+   
+  select(week, in_out,  media_taut) -> time_cc
+
+
+in_x <-  2.19
+in_xmin  <- 2.19 - 2*0.59
+in_xmax  <- 2.19 + 2*0.59
+
+out_x <- 7.5
+out_min <- 7.5 - 2*0.37
+out_max <- 7.5 + 2*0.37
+
+
+limiti <- tibble("in_out" = c(rep("in", 3), rep("out", 3)), 
+                 parametro = c(c("x_in", "xmin_in", "xmax_in"), c("x_in", "xmin_in", "xmax_in")), 
+                 value = c(in_x, in_xmin, in_xmax, out_x, out_min, out_max))
+
+
+ ggplot(time_cc)+
+   aes(x = week, y = media_taut) + 
+  geom_point()+
+  geom_line(linetype=1, size=0.2)+ 
+   facet_wrap(~ in_out)+
+ylim(0, 15)+
+  geom_segment(aes(x=0,xend=week,y=ifelse(in_out == "in", 2.19, 7.5),yend=ifelse(in_out == "in", 2.19, 7.5)), color='blue', linetype=1,size=0.2)+
+   geom_segment(aes(x=0,xend=week,y=ifelse(in_out == "in", 1.01,6.76),yend=ifelse(in_out == "in", 1.01,6.76)), color='red', linetype=1,size=0.2, alpha = 0.3)+
+   geom_segment(aes(x=0,xend=week,y=ifelse(in_out == "in", 3.37,8.24),yend=ifelse(in_out == "in", 3.37,8.24)), color='red', linetype=1,size=0.2, alpha = 0.3)+
+   labs(y = "giorni", subtitle = "Carta di controllo delle medie settimanali del tempo di attesa dell'utenza
+per conferimenti accettati dalla Sede Territoriale di Bologna nel 2024")+
+    theme_bw()+
+   theme(plot.subtitle=element_text(size=10,  color="blue"))
+
+```
+
+Il confronto tra queste tre  Sedi Territoriali, che sono differenti dal punto di vista strutturale e organizzativo,   così come differenti sono le attività che svolgono sia in termini di tipologie di analisi che di volumi di attività,  permette di verificare che il tempo di attesa dell'utenza è sensibile a questa variabilità e coglie i vari aspetti di processo della struttura in grado di spiegare le differenze, allo stesso tempo è sufficientemente solido da cogliere anche le omogeneità tra le strutture che è evidenziata dalla sistematica differenza tra l'andamento dei tempo dei conferimenti "in" sempre inferiore all'andamento del tempo dei conferimenti "out". 
+
+
+# Conclusioni
+Queste osservazioni preliminari sono sufficienti per considerare il tempo di attesa dell'utenza un valido KPI di efficienza che può essere adottato in Istituto per monitorare l'attività analitica dal punto di vista  gestionale. L'adozione in pratica di questo parametro presuppone l'individuazione di uno o più standard di riferimento che definisca il tempo di attesa dell'utenza considerato adeguato a soddisfare le richieste compatibilmente con gli aspetti tecnici, le finalità, la tipologia di materiale/matrice conferito, l'ampia eterogeneità delle strutture. 
 
 
 

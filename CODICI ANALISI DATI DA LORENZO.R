@@ -115,4 +115,39 @@ dt %>%
          Tipoprel, 
          tipoconf, unifinalita, in_out, dtconf_day, tempo_attesa, tempo_attesa_feriali, tempo_attesa_festivi) %>% 
   filter(in_out == "in", 
-         unifinalita == "False") %>%  
+         unifinalita == "False")   
+
+
+
+
+
+
+
+
+
+
+dt %>%
+    filter( dtconf_day != "Sunday",
+           anno_conferimento >= 2019) %>%
+    mutate(tg= ifelse(in_out == "in", 2.19, 7.5 ),
+           in_tg = ifelse(tempo_attesa_feriali <= tg, 1, 0)) %>%
+    group_by(in_out) %>%
+      summarise(tg_ris = sum(in_tg),
+                n = n()) %>%
+    mutate("%" = round(100*tg_ris/n, 1))
+
+
+
+
+
+#### - uso della funzione di sopravvivenza come descrittore del tempo di attesa
+#### 
+
+library(survival)  
+dtx <- dt %>% 
+  filter(anno_conferimento == 2024,
+         in_sede == "in") 
+
+
+
+plot(survfit(Surv(dtx$tempo_attesa_feriali)~1))
