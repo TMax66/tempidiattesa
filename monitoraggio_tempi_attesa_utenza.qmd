@@ -1,0 +1,590 @@
+---
+title: "Monitoraggio dei tempi di attesa dell'utenza"
+subtitle: "Accettazioni IN, target di servizio e aggiustamento per complessità tecnica"
+author: "Documento metodologico interno"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+  docx:
+    toc: true
+    number-sections: true
+lang: it
+---
+
+# Finalità del documento
+
+Il presente documento descrive il processo di monitoraggio dei tempi di attesa dell'utenza, con particolare riferimento alle **accettazioni IN**.
+
+L'obiettivo è definire una metodologia coerente per:
+
+- misurare il tempo di attesa dell'utenza;
+- classificare correttamente le accettazioni IN e OUT;
+- valutare i CDC accettanti rispetto a target di servizio;
+- introdurre un sistema di aggiustamento per la complessità tecnica degli esami;
+- rendere più equo il confronto tra CDC che svolgono attività tecniche differenti.
+
+Il monitoraggio dei tempi di attesa non deve essere inteso come una semplice misurazione descrittiva, ma come uno strumento di governo del processo. Esso consente di individuare aree critiche, differenziare le cause dei ritardi e supportare decisioni organizzative fondate su evidenze quantitative.
+
+# Unità di analisi
+
+## Accettazione e riga del database
+
+Nel database operativo una singola riga può corrispondere a un esame richiesto. Una stessa accettazione può quindi essere rappresentata da più righe, una per ciascun esame.
+
+Ai fini del monitoraggio dei tempi di attesa dell'utenza, tuttavia, l'unità di analisi corretta non è la singola riga del database, ma l'**accettazione**.
+
+Questo significa che:
+
+- ogni accettazione deve comparire una sola volta nel dataset di monitoraggio;
+- il tempo di attesa dell'utenza deve essere calcolato una sola volta per accettazione;
+- la classificazione IN/OUT deve essere attribuita all'intera accettazione;
+- eventuali accettazioni con più esami non devono generare duplicazioni nel calcolo del tempo di attesa.
+
+La chiave identificativa utilizzata per individuare univocamente una accettazione è composta da:
+
+```r
+anno_accettaz + numero_accettaz
+```
+
+Questa scelta è necessaria perché il solo `numero_accettaz` può ripetersi in anni differenti.
+
+# Classificazione delle accettazioni
+
+## Accettazioni IN
+
+Una accettazione è classificata come **IN** quando tutti gli esami richiesti sono erogati dallo stesso CDC che ha effettuato l'accettazione.
+
+Formalmente, per tutte le righe appartenenti alla stessa accettazione deve valere:
+
+```r
+cdc_accettante == cdc_erogante
+```
+
+Una accettazione IN rappresenta quindi un processo interamente gestito all'interno dello stesso CDC accettante.
+
+## Accettazioni OUT
+
+Una accettazione è classificata come **OUT** quando almeno uno degli esami richiesti è erogato da un CDC diverso dal CDC accettante.
+
+Formalmente:
+
+```r
+any(cdc_accettante != cdc_erogante)
+```
+
+all'interno della stessa accettazione.
+
+È importante sottolineare che una accettazione contenente sia esami IN sia esami OUT deve essere classificata come **OUT**.
+
+Dal punto di vista dell'utente, infatti, il tempo di attesa riguarda la chiusura dell'intera accettazione. È sufficiente che un solo esame venga inviato a un altro CDC perché l'accettazione assuma una natura di processo distribuito.
+
+# Focus sulle accettazioni IN
+
+Le accettazioni IN rappresentano il primo ambito di valutazione del processo perché, in questi casi, il CDC accettante coincide con il CDC erogante.
+
+Questo rende più diretto il collegamento tra tempo di attesa dell'utenza e organizzazione interna del CDC.
+
+Per le accettazioni IN, il tempo di attesa può essere influenzato da:
+
+- tempi di presa in carico;
+- programmazione degli esami;
+- tempi di avvio dell'analisi;
+- durata tecnica dell'analisi;
+- validazione tecnica;
+- conferma del rapporto di prova;
+- eventuali attese pre-analitiche e post-analitiche;
+- organizzazione del lavoro interno;
+- disponibilità di personale;
+- carichi di attività;
+- eventuali casi anomali.
+
+Le accettazioni OUT richiedono invece una lettura più complessa, perché il tempo di attesa può dipendere anche dalla rete tra CDC accettante e CDC erogante. Per questo motivo, nel presente documento, il sistema valutativo viene sviluppato principalmente sulle accettazioni IN.
+
+# Calcolo del tempo di attesa dell'utenza
+
+## Definizione
+
+Il tempo di attesa dell'utenza misura il tempo trascorso tra la data di accettazione e la data di conferma del rapporto di prova.
+
+Per ogni accettazione viene calcolato come:
+
+```r
+tempo_attesa_utente = giorni_lavorativi(data_acc, data_rdp)
+```
+
+dove:
+
+- `data_acc` è la data di accettazione;
+- `data_rdp` è la data di conferma del rapporto di prova;
+- `giorni_lavorativi()` è una funzione che conta solo i giorni lavorativi.
+
+## Giorni lavorativi
+
+Il calcolo considera come giorni lavorativi i giorni dal lunedì al venerdì.
+
+Sono quindi esclusi:
+
+- sabato;
+- domenica.
+
+Nella versione attuale del sistema non sono escluse automaticamente le festività nazionali, locali o aziendali.
+
+## Convenzione di conteggio
+
+La convenzione adottata è coerente con la differenza tra date:
+
+```r
+data_rdp - data_acc
+```
+
+Pertanto:
+
+- il giorno di accettazione non viene contato;
+- il giorno di conferma del rapporto di prova viene contato se lavorativo;
+- se accettazione e conferma del rapporto di prova avvengono nello stesso giorno, il tempo di attesa è pari a zero.
+
+Esempi:
+
+| Data accettazione | Data RDP | Giorni calendario | Giorni lavorativi |
+|---|---:|---:|---:|
+| Lunedì | Lunedì | 0 | 0 |
+| Lunedì | Martedì | 1 | 1 |
+| Venerdì | Lunedì | 3 | 1 |
+| Venerdì | Martedì | 4 | 2 |
+
+# Indicatori descrittivi
+
+Per ogni livello organizzativo selezionato vengono calcolate statistiche descrittive del tempo di attesa dell'utenza.
+
+Gli indicatori principali sono:
+
+- numero di accettazioni;
+- media;
+- mediana;
+- P75;
+- P90;
+- valore minimo;
+- valore massimo.
+
+La **mediana** descrive il comportamento centrale della distribuzione.
+
+Il **P75** e il **P90** aiutano invece a valutare la coda della distribuzione, cioè la quota di accettazioni con tempi più lunghi.
+
+Il valore massimo consente di individuare la presenza di casi estremi, che possono indicare anomalie operative, problemi di processo o specifiche condizioni tecniche.
+
+# Limiti della sola mediana
+
+La mediana è un indicatore utile, ma non sufficiente per valutare la qualità del servizio.
+
+Due CDC possono avere mediane simili ma livelli di affidabilità molto diversi.
+
+Ad esempio:
+
+- un CDC può avere mediana pari a 1 giorno, ma una coda lunga di accettazioni con tempi molto elevati;
+- un altro CDC può avere mediana pari a 2 giorni, ma una distribuzione più stabile e pochi casi oltre soglia.
+
+Per questo motivo, la valutazione non si basa solo sulle statistiche descrittive, ma anche su indicatori di rispetto del target.
+
+# Indicatore di rispetto del target di utenza
+
+## Definizione
+
+L'indicatore di rispetto del target misura la quota di accettazioni chiuse entro una soglia temporale definita.
+
+Per le accettazioni IN, ad esempio, può essere fissato il seguente standard:
+
+```text
+95% delle accettazioni IN entro 2 giorni lavorativi
+```
+
+L'indicatore è calcolato come:
+
+```r
+Perc_entro_target_utenza =
+  numero_accettazioni_entro_target / numero_accettazioni_totali
+```
+
+espresso in percentuale.
+
+Una accettazione è considerata entro target se:
+
+```r
+tempo_attesa_utente <= target_giorni_utenza
+```
+
+## Valutazione semaforica
+
+La valutazione può essere sintetizzata con una logica semaforica.
+
+| Condizione | Valutazione |
+|---|---|
+| Percentuale entro target maggiore o uguale al target percentuale | Buono |
+| Percentuale entro target entro 5 punti percentuali sotto il target | Attenzione |
+| Percentuale entro target oltre 5 punti percentuali sotto il target | Critico |
+
+Ad esempio, con target pari al 95%:
+
+| Percentuale entro target | Valutazione |
+|---:|---|
+| 96% | Buono |
+| 92% | Attenzione |
+| 87% | Critico |
+
+Questo indicatore risponde alla domanda:
+
+> Quale quota di accettazioni rispetta lo standard di servizio definito?
+
+# Necessità di aggiustamento per complessità tecnica
+
+## Problema metodologico
+
+Il tempo di attesa dell'utenza è influenzato dal tempo tecnico degli esami richiesti.
+
+Non tutti i CDC eseguono lo stesso mix di esami. Alcuni CDC possono svolgere prevalentemente esami tecnicamente brevi, mentre altri possono svolgere esami con tempi tecnici più lunghi.
+
+Ad esempio:
+
+- un esame sierologico può richiedere un tempo tecnico atteso di 1 giorno;
+- un esame virologico può richiedere un tempo tecnico atteso di 5 giorni;
+- un esame batteriologico può avere tempi tecnici intermedi.
+
+Se un CDC esegue prevalentemente esami virologici, avrà fisiologicamente tempi di attesa più elevati rispetto a un CDC che esegue prevalentemente esami sierologici.
+
+Pertanto, confrontare i CDC solo sulla base del tempo di attesa assoluto può produrre valutazioni distorte.
+
+## Esempio semplice
+
+Si considerino due CDC che eseguono esclusivamente lo stesso esame A.
+
+L'esame A ha un tempo tecnico da metodo pari a 2 giorni.
+
+| CDC | Numero esami | Esame svolto | Tempo tecnico | Mediana tempo utenza |
+|---|---:|---|---:|---:|
+| CDC 1 | 2.000 | Esame A | 2 giorni | 3 giorni |
+| CDC 2 | 1.000 | Esame A | 2 giorni | 4 giorni |
+
+In questo caso i due CDC svolgono lo stesso tipo di attività tecnica. La differenza nel tempo di attesa dell'utenza non è quindi spiegata dal tipo di esame, ma più probabilmente da fattori organizzativi.
+
+Il CDC 2, a parità di esame e di tempo tecnico atteso, presenta un tempo di attesa più elevato.
+
+## Esempio con mix tecnico diverso
+
+Si considerino ora due CDC con mix di esami differenti.
+
+| CDC | Mix prevalente | Tempo tecnico atteso prevalente | Mediana tempo utenza |
+|---|---|---:|---:|
+| CDC A | Esami virologici | 5 giorni | 6 giorni |
+| CDC B | Esami sierologici | 1 giorno | 3 giorni |
+
+Se si considera solo il tempo di attesa grezzo, il CDC B sembra migliore perché ha una mediana pari a 3 giorni contro 6 giorni del CDC A.
+
+Tuttavia, il CDC A svolge esami tecnicamente più lunghi. Se si confronta il tempo osservato con il tempo tecnico atteso:
+
+```text
+CDC A: 6 - 5 = 1 giorno oltre il tecnico atteso
+CDC B: 3 - 1 = 2 giorni oltre il tecnico atteso
+```
+
+Il CDC A, pur avendo un tempo assoluto più alto, appare più coerente con la complessità tecnica degli esami eseguiti.
+
+Il CDC B, pur avendo un tempo assoluto più basso, presenta un tempo eccedente maggiore rispetto alla complessità tecnica del proprio mix.
+
+Questo esempio mostra perché l'aggiustamento per complessità tecnica è necessario per confrontare correttamente i CDC.
+
+# Benchmark tecnico stimato
+
+## Razionale
+
+In assenza di un tempo tecnico standard da metodo disponibile e codificato per ogni esame, il sistema utilizza un benchmark tecnico stimato dai dati osservati.
+
+Per ogni esame, identificato da `nome_prodotto`, viene calcolato il tempo tecnico osservato:
+
+```r
+durata_tecnica = giorni_lavorativi(inizio_analisi, fine_analisi)
+```
+
+Successivamente, per ciascun `nome_prodotto`, viene stimata la distribuzione storica della durata tecnica.
+
+Gli indicatori calcolati sono:
+
+- numerosità del benchmark;
+- mediana tecnica;
+- P75 tecnico;
+- P90 tecnico.
+
+La stima viene effettuata a livello di sistema e non a livello di singolo CDC. Questa scelta evita di costruire un benchmark autoreferenziale per ciascun CDC.
+
+## Codice concettuale
+
+```r
+benchmark_tecnico <- df_in_esami %>%
+  filter(!is.na(durata_tecnica)) %>%
+  group_by(nome_prodotto) %>%
+  summarise(
+    n_esami_benchmark = n(),
+    tecnico_mediano = median(durata_tecnica, na.rm = TRUE),
+    tecnico_p75 = quantile(durata_tecnica, 0.75, na.rm = TRUE),
+    tecnico_p90 = quantile(durata_tecnica, 0.90, na.rm = TRUE),
+    .groups = "drop"
+  )
+```
+
+Nella versione attuale del sistema viene utilizzata la **mediana tecnica** come riferimento principale.
+
+La scelta della mediana è motivata dal fatto che, per molti esami, la variabilità intra-esame del tempo tecnico dovrebbe essere contenuta. La mediana rappresenta quindi un valore tipico robusto rispetto a eventuali valori estremi.
+
+# Tempo tecnico atteso dell'accettazione
+
+Una accettazione può contenere più esami.
+
+Dal punto di vista dell'utente, l'accettazione viene chiusa quando tutti gli esami richiesti sono disponibili e il rapporto di prova viene confermato.
+
+Pertanto, il tempo tecnico atteso dell'accettazione non viene calcolato come somma dei tempi tecnici dei singoli esami, ma come massimo dei tempi tecnici attesi.
+
+Formalmente:
+
+```r
+tecnico_atteso_accettazione =
+  max(tecnico_atteso_esami)
+```
+
+Questa scelta è coerente con il fatto che, se gli esami procedono in parallelo, l'esame con il tempo tecnico più lungo tende a determinare il tempo minimo necessario per chiudere l'intera accettazione.
+
+## Esempio
+
+Una accettazione contiene due esami:
+
+| Esame | Tempo tecnico atteso |
+|---|---:|
+| Esame A | 2 giorni |
+| Esame B | 3 giorni |
+
+Il tempo tecnico atteso dell'accettazione è:
+
+```text
+max(2, 3) = 3 giorni
+```
+
+Se il rapporto di prova viene confermato dopo 3 giorni lavorativi, il tempo di attesa osservato è coerente con il tempo tecnico atteso.
+
+Se il rapporto viene confermato dopo 5 giorni lavorativi, il tempo eccedente rispetto al tecnico atteso è pari a:
+
+```text
+5 - 3 = 2 giorni
+```
+
+Questi 2 giorni possono essere legati ad aspetti organizzativi, come:
+
+- attesa prima dell'avvio delle analisi;
+- tempi di validazione;
+- ritardi nella conferma del rapporto di prova;
+- code di lavorazione;
+- discontinuità del processo.
+
+# Indicatore aggiustato per complessità tecnica
+
+## Definizione
+
+L'indicatore aggiustato valuta la quota di accettazioni IN che si chiudono entro un target definito in funzione del tempo tecnico atteso.
+
+La regola adottata è:
+
+```r
+target_aggiustato =
+  tecnico_atteso_mediano + margine_organizzativo
+```
+
+Nella versione attuale del sistema il margine organizzativo è fissato in back-end a:
+
+```text
+1 giorno lavorativo
+```
+
+Una accettazione IN è quindi considerata conforme al target aggiustato se:
+
+```r
+tempo_attesa_utente <= tecnico_atteso_mediano + 1
+```
+
+L'indicatore è:
+
+```r
+Perc_entro_target_aggiustato =
+  numero_accettazioni_IN_entro_target_aggiustato /
+  numero_accettazioni_IN_totali
+```
+
+espresso in percentuale.
+
+## Significato gestionale
+
+Questo indicatore risponde alla domanda:
+
+> Quante accettazioni IN sono state chiuse entro un tempo coerente con la complessità tecnica degli esami richiesti?
+
+In altri termini, l'indicatore non valuta solo se l'utente ha atteso poco o molto in termini assoluti, ma se il tempo osservato è coerente con il tempo tecnico atteso del mix di esami.
+
+# Differenza tra target grezzo e target aggiustato
+
+Il sistema mantiene due indicatori distinti.
+
+## Target tempo utenza
+
+Il target tempo utenza misura la quota di accettazioni chiuse entro una soglia fissa.
+
+Esempio:
+
+```text
+95% delle accettazioni IN entro 2 giorni lavorativi
+```
+
+Questo indicatore rappresenta direttamente l'esperienza dell'utente.
+
+## Target aggiustato per complessità tecnica
+
+Il target aggiustato tiene conto del tempo tecnico atteso degli esami richiesti.
+
+Esempio:
+
+```text
+95% delle accettazioni IN entro tecnico atteso mediano + 1 giorno lavorativo
+```
+
+Questo indicatore rappresenta una valutazione più equa della performance del CDC, perché considera la diversa complessità tecnica del mix di esami.
+
+# Lettura combinata degli indicatori
+
+La lettura combinata dei due indicatori consente di distinguere situazioni differenti.
+
+| Target utenza | Target aggiustato | Interpretazione |
+|---|---|---|
+| Buono | Buono | Performance favorevole sia in termini assoluti sia rispetto alla complessità tecnica |
+| Critico | Buono | Tempo assoluto elevato, ma coerente con la complessità tecnica degli esami |
+| Buono | Critico | Tempo assoluto apparentemente buono, ma non adeguato rispetto a esami tecnicamente semplici |
+| Critico | Critico | Criticità confermata anche dopo aggiustamento per complessità tecnica |
+
+Questa distinzione è essenziale per evitare valutazioni improprie.
+
+Un CDC con tempi assoluti più lunghi può risultare adeguato dopo aggiustamento, se gestisce prevalentemente esami tecnicamente lunghi.
+
+Al contrario, un CDC con tempi assoluti contenuti può risultare meno performante se esegue prevalentemente esami tecnicamente semplici.
+
+# Esempio interpretativo
+
+Si considerino due CDC accettanti osservati nello stesso periodo.
+
+| CDC | Accettazioni IN | Mediana attesa | P90 attesa | % entro target utenza | % entro target aggiustato |
+|---|---:|---:|---:|---:|---:|
+| CDC 6110 | 1.393 | 0 giorni | 3 giorni | 87,8% | 89,3% |
+| CDC 6500 | 3.610 | 1 giorno | 2 giorni | 94,7% | 97,7% |
+
+Il CDC 6110 presenta una mediana di attesa molto bassa, pari a 0 giorni lavorativi. Tuttavia, solo l'87,8% delle accettazioni IN rispetta il target assoluto di utenza. Dopo l'aggiustamento per complessità tecnica, la percentuale sale solo lievemente all'89,3%.
+
+Questo suggerisce che la quota di accettazioni fuori target non è spiegata in misura rilevante dalla complessità tecnica degli esami. La criticità potrebbe quindi dipendere da variabilità del processo, code gestionali o casi anomali.
+
+Il CDC 6500 presenta una mediana di attesa pari a 1 giorno lavorativo. Se si guarda solo alla mediana, il CDC 6500 potrebbe apparire meno favorevole rispetto al CDC 6110. Tuttavia, il 94,7% delle accettazioni IN rispetta il target assoluto e il 97,7% rispetta il target aggiustato per complessità tecnica.
+
+Questo indica una maggiore stabilità del processo e suggerisce che il tempo osservato è coerente con il mix tecnico degli esami eseguiti.
+
+L'esempio mostra che la sola mediana può essere fuorviante. La valutazione deve considerare sia la capacità di rispettare un target assoluto sia la coerenza del tempo di attesa rispetto alla complessità tecnica.
+
+# Livelli organizzativi di analisi
+
+Il sistema consente di visualizzare i risultati a differenti livelli organizzativi:
+
+- totale complessivo;
+- dipartimento;
+- struttura complessa;
+- centro di costo;
+- singolo CDC accettante.
+
+Questa articolazione permette di effettuare confronti tra:
+
+- dipartimenti;
+- strutture complesse;
+- centri di costo;
+- CDC appartenenti alla stessa struttura;
+- CDC appartenenti allo stesso dipartimento.
+
+Il livello organizzativo selezionato modifica il livello di aggregazione dei risultati, ma non modifica la logica di calcolo degli indicatori.
+
+# Interpretazione gestionale
+
+La valutazione dei tempi di attesa dell'utenza non deve essere interpretata come attribuzione automatica di responsabilità a un CDC.
+
+Essa deve essere considerata come uno strumento di individuazione di aree da approfondire.
+
+Per le accettazioni IN, una criticità può dipendere da:
+
+- durata tecnica degli esami;
+- ritardi pre-analitici;
+- tempi di avvio dell'analisi;
+- ritardi nella validazione;
+- tempi post-analitici;
+- conferma tardiva del rapporto di prova;
+- presenza di casi estremi;
+- carichi di lavoro;
+- organizzazione interna;
+- mix di esami trattati.
+
+L'aggiustamento per complessità tecnica consente di distinguere i casi in cui il tempo elevato è giustificato dalla natura tecnica degli esami dai casi in cui il tempo rimane elevato anche dopo la normalizzazione.
+
+# Utilizzo operativo del monitoraggio
+
+Il sistema di monitoraggio può essere utilizzato per:
+
+1. individuare CDC o strutture con tempi di attesa superiori allo standard;
+2. confrontare CDC appartenenti allo stesso dipartimento o alla stessa struttura complessa;
+3. separare l'effetto del mix tecnico dall'effetto organizzativo;
+4. identificare accettazioni o gruppi di esami fuori target;
+5. monitorare la stabilità del processo nel tempo;
+6. supportare audit interni;
+7. orientare interventi di miglioramento;
+8. definire target più equi e coerenti con l'attività svolta.
+
+# Sintesi metodologica
+
+Il processo di monitoraggio si articola in tre passaggi principali.
+
+## Primo passaggio: classificazione corretta delle accettazioni
+
+Ogni accettazione viene classificata come IN o OUT a livello di accettazione.
+
+Una accettazione è IN solo se tutti gli esami sono erogati dal CDC accettante.
+
+Una accettazione è OUT se almeno un esame è erogato da un CDC diverso dal CDC accettante.
+
+## Secondo passaggio: misurazione del tempo utente
+
+Per ogni accettazione viene calcolato il tempo di attesa dell'utenza in giorni lavorativi.
+
+Il tempo è misurato dalla data di accettazione alla data di conferma del rapporto di prova.
+
+## Terzo passaggio: valutazione grezza e aggiustata
+
+Per le accettazioni IN vengono calcolati:
+
+- un indicatore grezzo di rispetto del target assoluto;
+- un indicatore aggiustato per complessità tecnica.
+
+Il primo misura l'esperienza reale dell'utente.
+
+Il secondo consente un confronto più equo tra CDC con mix di esami differenti.
+
+# Conclusione
+
+Il monitoraggio dei tempi di attesa dell'utenza rappresenta uno strumento essenziale per il governo del processo di accettazione, analisi e refertazione.
+
+La sola osservazione dei tempi grezzi può essere utile per descrivere l'esperienza dell'utente, ma non è sufficiente per confrontare in modo equo CDC con attività tecniche diverse.
+
+L'introduzione dell'aggiustamento per complessità tecnica consente di migliorare la qualità della valutazione, distinguendo tra tempi lunghi dovuti alla natura degli esami e tempi lunghi potenzialmente attribuibili a inefficienze organizzative.
+
+La combinazione tra target di utenza e target aggiustato fornisce quindi una base più solida per:
+
+- interpretare le performance;
+- individuare le criticità;
+- definire obiettivi realistici;
+- supportare interventi di miglioramento;
+- confrontare correttamente livelli organizzativi differenti.

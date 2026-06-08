@@ -1,0 +1,944 @@
+---
+title: "Analisi di sensitività per la calibrazione dei target sui tempi di attesa"
+subtitle: "Accettazioni IN: target utenza e target aggiustato per complessità tecnica"
+author: "Documento di lavoro"
+date: today
+lang: it
+format:
+  # html:
+  #   toc: true
+  #   toc-depth: 3
+  #   number-sections: true
+  #   df-print: paged
+  docx:
+    toc: true
+    number-sections: true
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+# Finalità del report
+
+Questo report Quarto consente di effettuare una **analisi di sensitività** per calibrare i target relativi ai tempi di attesa dell'utenza sulle **accettazioni IN**.
+
+L'obiettivo non è individuare a priori un unico target, ma confrontare diversi scenari per capire:
+
+- quanto è severo o permissivo un target assoluto in giorni lavorativi;
+- come cambia la valutazione dopo aggiustamento per complessità tecnica;
+- quanti CDC risultano in valutazione favorevole, intermedia o critica nei diversi scenari;
+- quali CDC cambiano valutazione tra target grezzo e target aggiustato;
+- quale combinazione di target può essere proposta alla Direzione come obiettivo realistico, progressivo e difendibile.
+
+Il report lavora sulle sole **accettazioni IN**, perché per le accettazioni OUT il tempo di attesa dipende anche dalla rete tra CDC accettanti e CDC eroganti e richiede una valutazione dedicata.
+
+# Impostazioni iniziali
+
+## Librerie
+
+```{r setup}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(purrr)
+library(readr)
+library(lubridate)
+library(knitr)
+```
+
+## Parametri principali
+
+Modificare i parametri di questa sezione per cambiare il periodo, i target assoluti da testare, i target percentuali e i margini organizzativi per il target aggiustato.
+
+```{r parametri}
+# =====================================================
+# PERIODO DI ANALISI
+# =====================================================
+
+periodo_inizio <- as.Date("2026-01-01")
+periodo_fine   <- as.Date("2026-12-31")
+
+# =====================================================
+# SCENARI TARGET ASSOLUTO UTENZA
+# =====================================================
+# Giorni lavorativi entro cui si desidera chiudere l'accettazione IN.
+
+scenari_target_giorni <- c(1, 2, 3, 4, 5, 6)
+
+# =====================================================
+# SCENARI TARGET PERCENTUALE
+# =====================================================
+# Percentuale-obiettivo di accettazioni entro soglia.
+
+scenari_target_percentuali <- c(75, 80, 85, 90, 95)
+
+# =====================================================
+# SCENARI MARGINE ORGANIZZATIVO PER TARGET AGGIUSTATO
+# =====================================================
+# Target aggiustato = tecnico_atteso + margine_tecnico.
+
+scenari_margine_tecnico <- c(0, 1, 2, 3)
+
+# =====================================================
+# BENCHMARK TECNICO
+# =====================================================
+# Possibili alternative: tecnico_atteso_mediano, tecnico_atteso_p75, tecnico_atteso_p90.
+# In questa versione si usa la mediana tecnica, coerentemente con l'ipotesi di bassa variabilità intra-esame.
+
+benchmark_tecnico <- "tecnico_atteso_mediano"
+
+# =====================================================
+# LIVELLI ORGANIZZATIVI DA ANALIZZARE
+# =====================================================
+
+livelli_organizzativi <- c(
+  "Totale",
+  "Dipartimento",
+  "Struttura complessa",
+  "Centro di costo",
+  "CDC accettante"
+)
+```
+
+# Caricamento dati
+
+Il report assume che nella cartella di lavoro siano disponibili i seguenti file:
+
+- `kpi_accettazioni.rds`: dataset a livello accettazione;
+- `kpi_accettazioni_in_adj.rds`: dataset delle accettazioni IN con tempo tecnico atteso stimato.
+
+```{r caricamento-dati}
+kpi_accettazioni <- readRDS(here("tautapp", "kpi_accettazioni.rds"))
+kpi_accettazioni_in_adj <- readRDS(here("tautapp", "kpi_accettazioni_in_adj.rds"))
+
+anagrafica_cdc <- readRDS(here("tautapp","anagrafica_cdc.rds"))
+
+anagrafica_cdc <- anagrafica_cdc %>%
+  transmute(
+    cdc = as.character(cdc),
+    nome_cdc = as.character(nome_cdc),
+    struttura_complessa = as.character(struttura_complessa),
+    dipartimento = as.character(dipartimento)
+  ) %>%
+  distinct(cdc, .keep_all = TRUE)
+
+kpi_accettazioni <- kpi_accettazioni %>%
+  mutate(
+    cdc_accettante = as.character(cdc_accettante)
+  ) %>%
+  left_join(
+    anagrafica_cdc,
+    by = c("cdc_accettante" = "cdc")
+  ) %>%
+  mutate(
+    nome_cdc = if_else(is.na(nome_cdc), cdc_accettante, nome_cdc),
+    struttura_complessa = if_else(
+      is.na(struttura_complessa),
+      "Non classificato",
+      struttura_complessa
+    ),
+    dipartimento = if_else(
+      is.na(dipartimento),
+      "Non classificato",
+      dipartimento
+    )
+  )
+
+kpi_accettazioni_in_adj <- kpi_accettazioni_in_adj %>%
+  mutate(
+    cdc_accettante = as.character(cdc_accettante)
+  ) %>%
+  left_join(
+    anagrafica_cdc,
+    by = c("cdc_accettante" = "cdc")
+  ) %>%
+  mutate(
+    nome_cdc = if_else(is.na(nome_cdc), cdc_accettante, nome_cdc),
+    struttura_complessa = if_else(
+      is.na(struttura_complessa),
+      "Non classificato",
+      struttura_complessa
+    ),
+    dipartimento = if_else(
+      is.na(dipartimento),
+      "Non classificato",
+      dipartimento
+    )
+  )
+
+```
+
+## Controllo colonne minime
+
+```{r controllo-colonne}
+colonne_kpi <- c(
+  "anno_accettaz",
+  "numero_accettaz",
+  "settore",
+  "cdc_accettante",
+  "nome_cdc",
+  "struttura_complessa",
+  "dipartimento",
+  "tipo_accettazione",
+  "data_acc",
+  "tempo_attesa_utente"
+)
+
+colonne_adj <- c(
+  "anno_accettaz",
+  "numero_accettaz",
+  "settore",
+  "cdc_accettante",
+  "nome_cdc",
+  "struttura_complessa",
+  "dipartimento",
+  "tipo_accettazione",
+  "data_acc",
+  "tempo_attesa_utente",
+  "tecnico_atteso_mediano",
+  "tecnico_atteso_p75",
+  "tecnico_atteso_p90"
+)
+
+mancanti_kpi <- setdiff(colonne_kpi, names(kpi_accettazioni))
+mancanti_adj <- setdiff(colonne_adj, names(kpi_accettazioni_in_adj))
+
+if (length(mancanti_kpi) > 0) {
+  stop(paste("Mancano colonne in kpi_accettazioni:", paste(mancanti_kpi, collapse = ", ")))
+}
+
+if (length(mancanti_adj) > 0) {
+  stop(paste("Mancano colonne in kpi_accettazioni_in_adj:", paste(mancanti_adj, collapse = ", ")))
+}
+```
+
+# Funzioni di supporto
+
+```{r funzioni}
+q_na <- function(x, p) {
+  if (all(is.na(x))) {
+    return(NA_real_)
+  }
+  as.numeric(quantile(x, p, na.rm = TRUE))
+}
+
+aggiungi_livello_org <- function(df, livello) {
+  
+  if (livello == "Totale") {
+    df %>%
+      mutate(
+        livello_org = "Totale",
+        gruppo_org = "Totale"
+      )
+    
+  } else if (livello == "Dipartimento") {
+    df %>%
+      mutate(
+        livello_org = "Dipartimento",
+        gruppo_org = dipartimento
+      )
+    
+  } else if (livello == "Struttura complessa") {
+    df %>%
+      mutate(
+        livello_org = "Struttura complessa",
+        gruppo_org = struttura_complessa
+      )
+    
+  } else if (livello == "Centro di costo") {
+    df %>%
+      mutate(
+        livello_org = "Centro di costo",
+        gruppo_org = nome_cdc
+      )
+    
+  } else if (livello == "CDC accettante") {
+    df %>%
+      mutate(
+        livello_org = "CDC accettante",
+        gruppo_org = cdc_accettante
+      )
+    
+  } else {
+    stop("Livello organizzativo non riconosciuto")
+  }
+}
+```
+
+# Preparazione dataset IN
+
+Il report si concentra sulle sole accettazioni IN. Le accettazioni OUT sono escluse dalla calibrazione dei target perché richiedono un modello dedicato alla rete accettante-erogante.
+
+```{r preparazione-in}
+kpi_in <- kpi_accettazioni %>%
+  mutate(
+    data_acc = as.Date(data_acc),
+    tempo_attesa_utente = as.numeric(tempo_attesa_utente)
+  ) %>% 
+  filter(
+    tipo_accettazione == "IN",
+    data_acc >= periodo_inizio,
+    data_acc <= periodo_fine
+  )
+
+kpi_in_adj <- kpi_accettazioni_in_adj %>%
+  mutate(
+    data_acc = as.Date(data_acc),
+    tempo_attesa_utente = as.numeric(tempo_attesa_utente),
+    tecnico_atteso = as.numeric(.data[[benchmark_tecnico]])
+  ) %>%
+  filter(
+    tipo_accettazione == "IN",
+    data_acc >= periodo_inizio,
+    data_acc <= periodo_fine,
+    !is.na(tecnico_atteso)
+  )
+
+n_acc_in <- nrow(kpi_in)
+n_acc_in_adj <- nrow(kpi_in_adj)
+
+cat("Accettazioni IN nel periodo:", n_acc_in, "\n")
+cat("Accettazioni IN valutabili con benchmark tecnico:", n_acc_in_adj, "\n")
+cat("Quota valutabile con benchmark tecnico:", round(100 * n_acc_in_adj / n_acc_in, 1), "%\n")
+```
+
+# Distribuzione del tempo di attesa e del target aggiustato
+
+Questa sezione descrive il comportamento complessivo delle accettazioni IN e permette di capire se il target aggiustato tende a essere più severo o più permissivo rispetto ai target assoluti testati.
+
+```{r distribuzione-base}
+distribuzione_tempi_in <- kpi_in %>%
+  summarise(
+    accettazioni = n(),
+    media_attesa = round(mean(tempo_attesa_utente, na.rm = TRUE), 1),
+    mediana_attesa = round(median(tempo_attesa_utente, na.rm = TRUE), 1),
+    p75_attesa = round(q_na(tempo_attesa_utente, 0.75), 1),
+    p90_attesa = round(q_na(tempo_attesa_utente, 0.90), 1),
+    max_attesa = max(tempo_attesa_utente, na.rm = TRUE)
+  )
+
+distribuzione_tempi_in %>%
+  kable(caption = "Distribuzione del tempo di attesa delle accettazioni IN")
+```
+
+```{r distribuzione-target-aggiustato}
+distribuzione_target_aggiustato <- expand_grid(
+  margine_tecnico = scenari_margine_tecnico
+) %>%
+  mutate(
+    dati = map(
+      margine_tecnico,
+      ~ kpi_in_adj %>%
+        mutate(target_aggiustato = tecnico_atteso + .x) %>%
+        summarise(
+          accettazioni_adj = n(),
+          mediana_target_aggiustato = round(median(target_aggiustato, na.rm = TRUE), 1),
+          p25_target_aggiustato = round(q_na(target_aggiustato, 0.25), 1),
+          p75_target_aggiustato = round(q_na(target_aggiustato, 0.75), 1),
+          p90_target_aggiustato = round(q_na(target_aggiustato, 0.90), 1)
+        )
+    )
+  ) %>%
+  unnest(dati)
+
+distribuzione_target_aggiustato %>%
+  kable(caption = "Distribuzione del target aggiustato per margine tecnico")
+```
+
+# Funzioni di calcolo degli scenari
+
+## Performance rispetto al target assoluto utenza
+
+```{r funzione-target-utenza}
+calcola_target_utenza <- function(df, livello, target_giorni, target_percentuale) {
+  
+  df %>%
+    aggiungi_livello_org(livello) %>%
+    mutate(
+      target_giorni_utenza = target_giorni,
+      target_percentuale = target_percentuale,
+      entro_target_utenza = tempo_attesa_utente <= target_giorni_utenza
+    ) %>%
+    group_by(livello_org, gruppo_org, target_giorni_utenza, target_percentuale) %>%
+    summarise(
+      accettazioni = n(),
+      entro_target_utenza = sum(entro_target_utenza, na.rm = TRUE),
+      perc_entro_target_utenza = round(
+        100 * entro_target_utenza / accettazioni,
+        1
+      ),
+      mediana_attesa = round(median(tempo_attesa_utente, na.rm = TRUE), 1),
+      p75_attesa = round(q_na(tempo_attesa_utente, 0.75), 1),
+      p90_attesa = round(q_na(tempo_attesa_utente, 0.90), 1),
+      .groups = "drop"
+    ) %>%
+    mutate(
+      scostamento_target_utenza = round(
+        perc_entro_target_utenza - target_percentuale,
+        1
+      ),
+      valutazione_utenza = case_when(
+        perc_entro_target_utenza >= target_percentuale ~ "Buono",
+        perc_entro_target_utenza >= target_percentuale - 5 ~ "Attenzione",
+        TRUE ~ "Critico"
+      )
+    )
+}
+```
+
+## Performance rispetto al target aggiustato per complessità tecnica
+
+```{r funzione-target-aggiustato}
+calcola_target_aggiustato <- function(df, livello, margine_tecnico, target_percentuale) {
+  
+  df %>%
+    aggiungi_livello_org(livello) %>%
+    mutate(
+      margine_tecnico = margine_tecnico,
+      target_percentuale = target_percentuale,
+      target_aggiustato = tecnico_atteso + margine_tecnico,
+      entro_target_aggiustato = tempo_attesa_utente <= target_aggiustato
+    ) %>%
+    group_by(livello_org, gruppo_org, margine_tecnico, target_percentuale) %>%
+    summarise(
+      accettazioni_adj = n(),
+      entro_target_aggiustato = sum(entro_target_aggiustato, na.rm = TRUE),
+      perc_entro_target_aggiustato = round(
+        100 * entro_target_aggiustato / accettazioni_adj,
+        1
+      ),
+      mediana_tecnico_atteso = round(median(tecnico_atteso, na.rm = TRUE), 1),
+      mediana_target_aggiustato = round(median(target_aggiustato, na.rm = TRUE), 1),
+      p25_target_aggiustato = round(q_na(target_aggiustato, 0.25), 1),
+      p75_target_aggiustato = round(q_na(target_aggiustato, 0.75), 1),
+      p90_target_aggiustato = round(q_na(target_aggiustato, 0.90), 1),
+      mediana_extra_vs_tecnico = round(
+        median(tempo_attesa_utente - tecnico_atteso, na.rm = TRUE),
+        1
+      ),
+      p90_extra_vs_tecnico = round(
+        q_na(tempo_attesa_utente - tecnico_atteso, 0.90),
+        1
+      ),
+      .groups = "drop"
+    ) %>%
+    mutate(
+      scostamento_target_aggiustato = round(
+        perc_entro_target_aggiustato - target_percentuale,
+        1
+      ),
+      valutazione_aggiustata = case_when(
+        perc_entro_target_aggiustato >= target_percentuale ~ "Buono",
+        perc_entro_target_aggiustato >= target_percentuale - 5 ~ "Attenzione",
+        TRUE ~ "Critico"
+      )
+    )
+}
+```
+
+# Costruzione degli scenari
+
+```{r scenari}
+scenari_utenza <- expand_grid(
+  livello = livelli_organizzativi,
+  target_giorni = scenari_target_giorni,
+  target_percentuale = scenari_target_percentuali
+)
+
+scenari_aggiustati <- expand_grid(
+  livello = livelli_organizzativi,
+  margine_tecnico = scenari_margine_tecnico,
+  target_percentuale = scenari_target_percentuali
+)
+```
+
+# Calcolo degli scenari
+
+```{r calcolo-scenari}
+risultati_utenza <- pmap_dfr(
+  scenari_utenza,
+  function(livello, target_giorni, target_percentuale) {
+    calcola_target_utenza(
+      df = kpi_in,
+      livello = livello,
+      target_giorni = target_giorni,
+      target_percentuale = target_percentuale
+    )
+  }
+)
+
+risultati_aggiustati <- pmap_dfr(
+  scenari_aggiustati,
+  function(livello, margine_tecnico, target_percentuale) {
+    calcola_target_aggiustato(
+      df = kpi_in_adj,
+      livello = livello,
+      margine_tecnico = margine_tecnico,
+      target_percentuale = target_percentuale
+    )
+  }
+)
+```
+
+# Confronto tra target utenza e target aggiustato
+
+Il confronto incrocia tutti gli scenari di target assoluto con tutti gli scenari di margine tecnico. In questo modo è possibile valutare, per ogni combinazione, se l'aggiustamento per complessità tecnica rende la valutazione più severa, più favorevole o sostanzialmente allineata.
+
+```{r confronto-scenari}
+confronto_scenari <- risultati_utenza %>%
+  inner_join(
+    risultati_aggiustati,
+    by = c(
+      "livello_org",
+      "gruppo_org",
+      "target_percentuale"
+    )
+  ) %>%
+  mutate(
+    differenza_aggiustato_meno_utenza = round(
+      perc_entro_target_aggiustato - perc_entro_target_utenza,
+      1
+    ),
+    interpretazione = case_when(
+      differenza_aggiustato_meno_utenza >= 5 ~
+        "Aggiustamento più favorevole: possibile elevata complessità tecnica",
+      differenza_aggiustato_meno_utenza <= -5 ~
+        "Aggiustamento più severo: possibile target assoluto permissivo per mix semplice",
+      TRUE ~
+        "Target grezzo e aggiustato sostanzialmente allineati"
+    )
+  )
+```
+
+# Sensitività a livello totale
+
+Questa tabella è utile per discutere con la Direzione il comportamento complessivo del sistema nei diversi scenari.
+
+```{r sensitivita-totale}
+sensitivita_totale <- confronto_scenari %>%
+  filter(livello_org == "Totale") %>%
+  select(
+    livello_org,
+    gruppo_org,
+    target_giorni_utenza,
+    margine_tecnico,
+    target_percentuale,
+    accettazioni,
+    perc_entro_target_utenza,
+    accettazioni_adj,
+    perc_entro_target_aggiustato,
+    mediana_target_aggiustato,
+    p25_target_aggiustato,
+    p75_target_aggiustato,
+    differenza_aggiustato_meno_utenza,
+    interpretazione
+  ) %>%
+  arrange(
+    target_percentuale,
+    target_giorni_utenza,
+    margine_tecnico
+  )
+
+sensitivita_totale %>%
+  filter(target_percentuale == max(scenari_target_percentuali)) %>%
+  kable(caption = "Sensitività totale per il target percentuale massimo testato")
+```
+
+# Distribuzione delle valutazioni per scenario
+
+Questa sezione risponde alla domanda: con ciascuno scenario, quanti gruppi organizzativi risultano buoni, in attenzione o critici?
+
+```{r distribuzione-valutazioni}
+distribuzione_valutazioni_utenza <- risultati_utenza %>%
+  group_by(
+    livello_org,
+    target_giorni_utenza,
+    target_percentuale,
+    valutazione_utenza
+  ) %>%
+  summarise(
+    n_gruppi = n(),
+    .groups = "drop"
+  ) %>%
+  group_by(
+    livello_org,
+    target_giorni_utenza,
+    target_percentuale
+  ) %>%
+  mutate(
+    perc_gruppi = round(100 * n_gruppi / sum(n_gruppi), 1)
+  ) %>%
+  ungroup()
+
+distribuzione_valutazioni_aggiustata <- risultati_aggiustati %>%
+  group_by(
+    livello_org,
+    margine_tecnico,
+    target_percentuale,
+    valutazione_aggiustata
+  ) %>%
+  summarise(
+    n_gruppi = n(),
+    .groups = "drop"
+  ) %>%
+  group_by(
+    livello_org,
+    margine_tecnico,
+    target_percentuale
+  ) %>%
+  mutate(
+    perc_gruppi = round(100 * n_gruppi / sum(n_gruppi), 1)
+  ) %>%
+  ungroup()
+```
+
+# Classificazione degli scenari a livello CDC
+
+Questa tabella consente di capire se uno scenario è molto severo, sfidante, intermedio o permissivo, osservando la quota di CDC che raggiungono il target aggiustato.
+
+```{r classificazione-scenari}
+classificazione_scenari <- confronto_scenari %>%
+  filter(livello_org == "CDC accettante") %>%
+  group_by(
+    target_giorni_utenza,
+    margine_tecnico,
+    target_percentuale
+  ) %>%
+  summarise(
+    n_cdc = n(),
+    perc_mediana_utenza = median(perc_entro_target_utenza, na.rm = TRUE),
+    perc_mediana_aggiustata = median(perc_entro_target_aggiustato, na.rm = TRUE),
+    quota_cdc_buoni_utenza = round(
+      100 * mean(valutazione_utenza == "Buono", na.rm = TRUE),
+      1
+    ),
+    quota_cdc_buoni_aggiustata = round(
+      100 * mean(valutazione_aggiustata == "Buono", na.rm = TRUE),
+      1
+    ),
+    quota_cdc_critici_utenza = round(
+      100 * mean(valutazione_utenza == "Critico", na.rm = TRUE),
+      1
+    ),
+    quota_cdc_critici_aggiustata = round(
+      100 * mean(valutazione_aggiustata == "Critico", na.rm = TRUE),
+      1
+    ),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    lettura_scenario = case_when(
+      quota_cdc_buoni_aggiustata < 10 ~
+        "Scenario molto severo",
+      quota_cdc_buoni_aggiustata >= 10 & quota_cdc_buoni_aggiustata < 40 ~
+        "Scenario sfidante",
+      quota_cdc_buoni_aggiustata >= 40 & quota_cdc_buoni_aggiustata < 70 ~
+        "Scenario intermedio",
+      quota_cdc_buoni_aggiustata >= 70 ~
+        "Scenario permissivo"
+    )
+  ) %>%
+  arrange(
+    target_percentuale,
+    target_giorni_utenza,
+    margine_tecnico
+  )
+
+classificazione_scenari %>%
+  filter(target_percentuale == max(scenari_target_percentuali)) %>%
+  kable(caption = "Classificazione degli scenari a livello CDC accettante")
+```
+
+# Focus sui CDC accettanti
+
+Questa tabella permette di individuare i CDC che cambiano valutazione tra target utenza e target aggiustato.
+
+```{r focus-cdc}
+focus_cdc <- confronto_scenari %>%
+  filter(livello_org == "CDC accettante") %>%
+  select(
+    cdc_accettante = gruppo_org,
+    target_giorni_utenza,
+    margine_tecnico,
+    target_percentuale,
+    accettazioni,
+    perc_entro_target_utenza,
+    valutazione_utenza,
+    accettazioni_adj,
+    perc_entro_target_aggiustato,
+    valutazione_aggiustata,
+    mediana_attesa,
+    mediana_tecnico_atteso,
+    mediana_target_aggiustato,
+    differenza_aggiustato_meno_utenza,
+    interpretazione
+  ) %>%
+  arrange(
+    target_giorni_utenza,
+    margine_tecnico,
+    target_percentuale,
+    cdc_accettante
+  )
+
+focus_cdc %>%
+  filter(
+    target_percentuale == max(scenari_target_percentuali),
+    target_giorni_utenza == 3,
+    margine_tecnico == 1
+  ) %>%
+  kable(caption = "Focus CDC nello scenario esemplificativo: target utenza 3 giorni, margine tecnico 1, target 95%")
+```
+
+# Casi discordanti
+
+I casi discordanti sono particolarmente utili per la lettura gestionale:
+
+- **Buono nel target utenza ma critico nell'aggiustato**: il target assoluto può essere troppo permissivo rispetto alla semplicità tecnica del mix;
+- **Critico nel target utenza ma buono nell'aggiustato**: il tempo assoluto è elevato, ma giustificato dalla complessità tecnica.
+
+```{r casi-discordanti}
+casi_discordanti <- focus_cdc %>%
+  filter(
+    target_percentuale == max(scenari_target_percentuali),
+    target_giorni_utenza == 3,
+    margine_tecnico == 1,
+    valutazione_utenza != valutazione_aggiustata
+  ) %>%
+  arrange(differenza_aggiustato_meno_utenza)
+
+casi_discordanti %>%
+  kable(caption = "CDC con valutazione discordante tra target utenza e target aggiustato")
+```
+
+# Grafici
+
+## Sensitività totale del target utenza
+
+```{r grafico-sensitivita-totale, fig.width=10, fig.height=6}
+grafico_sensitivita_totale <- sensitivita_totale %>%
+  filter(target_percentuale == max(scenari_target_percentuali)) %>%
+  ggplot(
+    aes(
+      x = target_giorni_utenza,
+      y = perc_entro_target_utenza,
+      color = factor(margine_tecnico),
+      group = factor(margine_tecnico)
+    )
+  ) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  geom_hline(
+    yintercept = max(scenari_target_percentuali),
+    linetype = "dashed",
+    color = "black"
+  ) +
+  labs(
+    x = "Target utenza, giorni lavorativi",
+    y = "% accettazioni IN entro target utenza",
+    color = "Margine tecnico",
+    title = "Sensitività del target utenza - livello totale",
+    subtitle = paste("Linea tratteggiata = target percentuale", max(scenari_target_percentuali), "%")
+  ) +
+  theme_minimal()
+
+grafico_sensitivita_totale
+```
+
+## Confronto tra target utenza e target aggiustato
+
+```{r grafico-confronto-totale, fig.width=10, fig.height=6}
+grafico_confronto_totale <- sensitivita_totale %>%
+  filter(target_percentuale == max(scenari_target_percentuali)) %>%
+  select(
+    target_giorni_utenza,
+    margine_tecnico,
+    perc_entro_target_utenza,
+    perc_entro_target_aggiustato
+  ) %>%
+  pivot_longer(
+    cols = c(
+      perc_entro_target_utenza,
+      perc_entro_target_aggiustato
+    ),
+    names_to = "indicatore",
+    values_to = "percentuale"
+  ) %>%
+  mutate(
+    indicatore = recode(
+      indicatore,
+      "perc_entro_target_utenza" = "Target utenza",
+      "perc_entro_target_aggiustato" = "Target aggiustato"
+    )
+  ) %>%
+  ggplot(
+    aes(
+      x = target_giorni_utenza,
+      y = percentuale,
+      color = indicatore,
+      group = indicatore
+    )
+  ) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  facet_wrap(~ margine_tecnico) +
+  geom_hline(
+    yintercept = max(scenari_target_percentuali),
+    linetype = "dashed",
+    color = "black"
+  ) +
+  labs(
+    x = "Target utenza, giorni lavorativi",
+    y = "% accettazioni IN entro target",
+    color = "Indicatore",
+    title = "Confronto tra target utenza e target aggiustato",
+    subtitle = "Ogni pannello rappresenta un diverso margine organizzativo tecnico"
+  ) +
+  theme_minimal()
+
+grafico_confronto_totale
+```
+
+## Quota di CDC buoni per scenario
+
+```{r grafico-quota-cdc-buoni, fig.width=10, fig.height=6}
+grafico_quota_cdc_buoni <- classificazione_scenari %>%
+  filter(target_percentuale == max(scenari_target_percentuali)) %>%
+  ggplot(
+    aes(
+      x = target_giorni_utenza,
+      y = quota_cdc_buoni_aggiustata,
+      color = factor(margine_tecnico),
+      group = factor(margine_tecnico)
+    )
+  ) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  labs(
+    x = "Target utenza, giorni lavorativi",
+    y = "% CDC con valutazione buona aggiustata",
+    color = "Margine tecnico",
+    title = "Quota di CDC buoni per scenario",
+    subtitle = "Indicatore aggiustato per complessità tecnica"
+  ) +
+  theme_minimal()
+
+grafico_quota_cdc_buoni
+```
+
+# Proposta di lettura dei risultati
+
+L'analisi di sensitività consente di distinguere scenari molto diversi tra loro.
+
+Uno scenario può essere considerato **molto severo** quando quasi nessun CDC raggiunge il target aggiustato. Uno scenario di questo tipo può essere utile come obiettivo strategico di lungo periodo, ma rischia di essere poco utilizzabile come obiettivo operativo immediato.
+
+Uno scenario può essere considerato **sfidante** quando una quota minoritaria ma non trascurabile di CDC raggiunge il target. Questo tipo di scenario è utile per definire obiettivi progressivi.
+
+Uno scenario può essere considerato **intermedio** quando una quota significativa di CDC raggiunge il target, ma resta spazio per il miglioramento.
+
+Uno scenario può essere considerato **permissivo** quando la maggior parte dei CDC raggiunge il target. In questo caso il target può essere poco selettivo e meno utile per indirizzare il miglioramento.
+
+# Sintesi automatica dello scenario esemplificativo
+
+La sintesi seguente considera, a titolo esemplificativo, lo scenario:
+
+- target utenza: 3 giorni lavorativi;
+- margine tecnico: 1 giorno lavorativo;
+- target percentuale: valore massimo tra quelli testati.
+
+```{r sintesi-scenario-esempio}
+scenario_esempio <- classificazione_scenari %>%
+  filter(
+    target_giorni_utenza == 3,
+    margine_tecnico == 1,
+    target_percentuale == max(scenari_target_percentuali)
+  )
+
+scenario_esempio %>%
+  kable(caption = "Sintesi dello scenario esemplificativo")
+```
+
+```{r commento-scenario-esempio, results='asis'}
+if (nrow(scenario_esempio) > 0) {
+  cat("Nello scenario esemplificativo, la quota mediana di accettazioni entro target utenza tra i CDC è pari a ",
+      scenario_esempio$perc_mediana_utenza,
+      "%, mentre la quota mediana entro target aggiustato è pari a ",
+      scenario_esempio$perc_mediana_aggiustata,
+      "%. ", sep = "")
+  
+  cat("La quota di CDC con valutazione buona dopo aggiustamento è pari a ",
+      scenario_esempio$quota_cdc_buoni_aggiustata,
+      "%, mentre la quota di CDC critici dopo aggiustamento è pari a ",
+      scenario_esempio$quota_cdc_critici_aggiustata,
+      "%. ", sep = "")
+  
+  cat("La classificazione dello scenario è: **",
+      scenario_esempio$lettura_scenario,
+      "**.", sep = "")
+} else {
+  cat("Lo scenario esemplificativo non è presente nella griglia dei parametri selezionati.")
+}
+```
+
+# Esportazione dei risultati
+
+I risultati principali vengono esportati in formato CSV e i grafici in formato PNG.
+
+```{r esportazione}
+write_csv(sensitivita_totale, "sensitivita_totale_target_IN.csv")
+write_csv(classificazione_scenari, "classificazione_scenari_target_IN.csv")
+write_csv(focus_cdc, "focus_cdc_target_IN.csv")
+write_csv(casi_discordanti, "casi_discordanti_target_IN.csv")
+write_csv(distribuzione_valutazioni_utenza, "distribuzione_valutazioni_utenza.csv")
+write_csv(distribuzione_valutazioni_aggiustata, "distribuzione_valutazioni_aggiustata.csv")
+
+ggsave(
+  "grafico_sensitivita_totale.png",
+  grafico_sensitivita_totale,
+  width = 10,
+  height = 6,
+  dpi = 300
+)
+
+ggsave(
+  "grafico_confronto_totale.png",
+  grafico_confronto_totale,
+  width = 10,
+  height = 6,
+  dpi = 300
+)
+
+ggsave(
+  "grafico_quota_cdc_buoni.png",
+  grafico_quota_cdc_buoni,
+  width = 10,
+  height = 6,
+  dpi = 300
+)
+```
+
+# Conclusioni operative
+
+L'analisi di sensitività permette di proporre alla Direzione un sistema di target fondato su dati osservati e non su una soglia arbitraria.
+
+La logica consigliata è mantenere due livelli di lettura:
+
+1. **target assoluto di utenza**, utile per misurare l'esperienza reale dell'utente;
+2. **target aggiustato per complessità tecnica**, utile per confrontare i CDC in modo più equo.
+
+Il target assoluto può essere usato come standard generale di servizio, mentre il target aggiustato permette di valutare se i tempi osservati sono coerenti con il mix tecnico degli esami eseguiti.
+
+La scelta finale del target dovrebbe tenere conto di:
+
+- baseline complessiva del sistema;
+- distribuzione dei target aggiustati;
+- quota di CDC già in grado di raggiungere lo standard;
+- distanza dei CDC critici dal target;
+- sostenibilità organizzativa del miglioramento richiesto;
+- opportunità di definire obiettivi progressivi su più anni.
+
+In questo senso, il target non deve essere necessariamente un numero unico e definitivo, ma può essere definito come una combinazione tra:
+
+- standard generale di servizio;
+- regola di aggiustamento per complessità tecnica;
+- obiettivi progressivi di miglioramento.
