@@ -17,7 +17,7 @@ kpi_accettazioni_in_adj <- readRDS(here("tautapp","kpi_accettazioni_in_adj.rds")
 # PARAMETRI BACK-END PER AGGIUSTAMENTO TECNICO
 # =====================================================
 
-benchmark_tecnico_fisso <- "tecnico_atteso_mediano"
+benchmark_tecnico_fisso <- "tecnico_atteso_p90"
 margine_tecnico_fisso <- 0
 
 
