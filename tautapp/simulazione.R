@@ -944,3 +944,554 @@ sintesi_esame_mc <- analisi_esame_mc %>%
   arrange(desc(vincolante_lento_mediana))
 
 sintesi_esame_mc
+
+
+
+
+## CODICI PER DIAGNOSTICA RISULTATI CDC DALL'APP
+
+
+library(dplyr)
+library(stringr)
+library(lubridate)
+library(tidyr)
+library(readr)
+
+# =====================================================
+# 0. PARAMETRI DI ANALISI
+# =====================================================
+
+# CDC/livello da analizzare
+cdc_focus <- "Sede Territoriale di Bergamo"
+
+# Periodo di analisi
+periodo_inizio <- as.Date("2026-01-01")
+periodo_fine   <- as.Date("2026-12-31")
+
+# Benchmark tecnico da usare per il target aggiustato
+# Possibili valori:
+# "tecnico_atteso_mediano"
+# "tecnico_atteso_p75"
+# "tecnico_atteso_p90"
+benchmark_col <- "tecnico_atteso_p90"
+
+# Target assoluto utenza, se vuoi confrontarlo
+target_utenza_giorni <- 3
+
+# Target percentuale atteso
+target_percentuale <- 95
+
+# Soglie operative per classificazione diagnostica
+soglia_pre_analitico <- 1
+soglia_firma <- 1
+
+# =====================================================
+# 1. DATASET ACCETTAZIONI DEL CDC
+# =====================================================
+
+acc_cdc <- kpi_accettazioni_in_adj  |> 
+  mutate(
+    data_acc = as.Date(data_acc),
+    data_rdp = as.Date(data_rdp),
+    tecnico_atteso_target = .data[[benchmark_col]],
+    target_aggiustato = tecnico_atteso_target,
+    entro_target_aggiustato = tempo_attesa_utente <= target_aggiustato,
+    fuori_target_aggiustato = !entro_target_aggiustato,
+    scostamento_vs_target = tempo_attesa_utente - target_aggiustato,
+    entro_target_utenza = tempo_attesa_utente <= target_utenza_giorni
+  ) |>  
+  filter(
+    data_acc >= periodo_inizio,
+    data_acc <= periodo_fine,
+    nome_cdc == cdc_focus
+  )
+
+# =====================================================
+# 2. VERIFICA DEL VALORE CHE COMPARE NELL'APP
+# =====================================================
+
+sintesi_cdc <- acc_cdc %>%
+  summarise(
+    cdc = first(nome_cdc),
+    accettazioni_in = n(),
+    
+    entro_target_aggiustato = sum(
+      entro_target_aggiustato,
+      na.rm = TRUE
+    ),
+    
+    perc_entro_target_aggiustato = round(
+      100 * entro_target_aggiustato / accettazioni_in,
+      1
+    ),
+    
+    fuori_target_aggiustato = sum(
+      fuori_target_aggiustato,
+      na.rm = TRUE
+    ),
+    
+    perc_fuori_target_aggiustato = round(
+      100 * fuori_target_aggiustato / accettazioni_in,
+      1
+    ),
+    
+    mediana_attesa_utente = median(
+      tempo_attesa_utente,
+      na.rm = TRUE
+    ),
+    
+    mediana_target_aggiustato = median(
+      target_aggiustato,
+      na.rm = TRUE
+    ),
+    
+    mediana_scostamento = median(
+      scostamento_vs_target,
+      na.rm = TRUE
+    ),
+    
+    p75_scostamento = quantile(
+      scostamento_vs_target,
+      0.75,
+      na.rm = TRUE
+    ),
+    
+    p90_scostamento = quantile(
+      scostamento_vs_target,
+      0.90,
+      na.rm = TRUE
+    ),
+    
+    max_scostamento = max(
+      scostamento_vs_target,
+      na.rm = TRUE
+    )
+  )
+
+View(sintesi_cdc)
+
+distribuzione_scostamenti <- acc_cdc %>%
+  mutate(
+    classe_scostamento = case_when(
+      scostamento_vs_target <= 0 ~ "Entro target",
+      scostamento_vs_target == 1 ~ "+1 giorno",
+      scostamento_vs_target == 2 ~ "+2 giorni",
+      scostamento_vs_target >= 3 ~ ">= +3 giorni",
+      TRUE ~ "Non classificato"
+    ),
+    classe_scostamento = factor(
+      classe_scostamento,
+      levels = c(
+        "Entro target",
+        "+1 giorno",
+        "+2 giorni",
+        ">= +3 giorni",
+        "Non classificato"
+      )
+    )
+  ) %>%
+  count(classe_scostamento) %>%
+  mutate(
+    perc = round(100 * n / sum(n), 1)
+  )
+
+View(distribuzione_scostamenti)
+
+
+
+accettazioni_problematiche <- acc_cdc %>%
+  filter(fuori_target_aggiustato) %>%
+  arrange(desc(scostamento_vs_target)) %>%
+  select(
+    anno_accettaz,
+    numero_accettaz,
+    settore,
+    cdc_accettante,
+    nome_cdc,
+    data_acc,
+    data_rdp,
+    n_esami,
+    tempo_attesa_utente,
+    target_aggiustato,
+    tecnico_atteso_mediano,
+    tecnico_atteso_p75,
+    tecnico_atteso_p90,
+    scostamento_vs_target
+  )
+
+
+View(accettazioni_problematiche)
+
+
+
+sintesi_settore <- acc_cdc %>%
+  group_by(settore) %>%
+  summarise(
+    accettazioni_in = n(),
+    
+    entro_target = sum(
+      entro_target_aggiustato,
+      na.rm = TRUE
+    ),
+    
+    perc_entro_target = round(
+      100 * entro_target / accettazioni_in,
+      1
+    ),
+    
+    fuori_target = sum(
+      fuori_target_aggiustato,
+      na.rm = TRUE
+    ),
+    
+    perc_fuori_target = round(
+      100 * fuori_target / accettazioni_in,
+      1
+    ),
+    
+    mediana_attesa = median(
+      tempo_attesa_utente,
+      na.rm = TRUE
+    ),
+    
+    mediana_target_aggiustato = median(
+      target_aggiustato,
+      na.rm = TRUE
+    ),
+    
+    mediana_scostamento = median(
+      scostamento_vs_target,
+      na.rm = TRUE
+    ),
+    
+    p90_scostamento = quantile(
+      scostamento_vs_target,
+      0.90,
+      na.rm = TRUE
+    ),
+    
+    .groups = "drop"
+  ) %>%
+  arrange(perc_entro_target)
+
+View(sintesi_settore)
+
+
+
+sintesi_complessita <- acc_cdc %>%
+  mutate(
+    classe_complessita = case_when(
+      target_aggiustato <= 1 ~ "Bassa",
+      target_aggiustato <= 3 ~ "Media",
+      target_aggiustato <= 5 ~ "Alta",
+      target_aggiustato > 5 ~ "Molto alta",
+      TRUE ~ "Non classificato"
+    ),
+    classe_complessita = factor(
+      classe_complessita,
+      levels = c(
+        "Bassa",
+        "Media",
+        "Alta",
+        "Molto alta",
+        "Non classificato"
+      )
+    )
+  ) %>%
+  group_by(classe_complessita) %>%
+  summarise(
+    accettazioni = n(),
+    
+    perc_entro_target = round(
+      100 * mean(entro_target_aggiustato, na.rm = TRUE),
+      1
+    ),
+    
+    mediana_attesa = median(
+      tempo_attesa_utente,
+      na.rm = TRUE
+    ),
+    
+    mediana_target_aggiustato = median(
+      target_aggiustato,
+      na.rm = TRUE
+    ),
+    
+    mediana_scostamento = median(
+      scostamento_vs_target,
+      na.rm = TRUE
+    ),
+    
+    .groups = "drop"
+  )
+
+View(sintesi_complessita)
+
+
+esami_cdc <- df_app %>%
+  mutate(
+    data_acc_d = as.Date(data_acc_d),
+    data_rdp_d = as.Date(data_rdp_d),
+    inizio_analisi_d = as.Date(inizio_analisi),
+    fine_analisi_d = as.Date(fine_analisi),
+    
+    durata_tecnica_effettiva = giorni_lavorativi(
+      inizio_analisi_d,
+      fine_analisi_d
+    )
+  ) %>%
+  semi_join(
+    acc_cdc %>%
+      select(anno_accettaz, numero_accettaz),
+    by = c("anno_accettaz", "numero_accettaz")
+  )
+
+
+esami_vincolanti <- esami_cdc %>%
+  group_by(anno_accettaz, numero_accettaz) %>%
+  mutate(
+    fine_analisi_max_acc = max(
+      fine_analisi_d,
+      na.rm = TRUE
+    ),
+    esame_vincolante_effettivo =
+      fine_analisi_d == fine_analisi_max_acc
+  ) %>%
+  ungroup() %>%
+  filter(esame_vincolante_effettivo) %>%
+  group_by(anno_accettaz, numero_accettaz) %>%
+  slice_max(
+    order_by = durata_tecnica_effettiva,
+    n = 1,
+    with_ties = FALSE
+  ) %>%
+  ungroup() %>%
+  select(
+    anno_accettaz,
+    numero_accettaz,
+    nome_prodotto_vincolante = nome_prodotto,
+    descrizione_prodotto_vincolante = descrizione_prodotto,
+    inizio_analisi_vincolante = inizio_analisi_d,
+    fine_analisi_vincolante = fine_analisi_d,
+    durata_tecnica_vincolante = durata_tecnica_effettiva
+  )
+
+
+esami_vincolanti <- esami_cdc %>%
+  group_by(anno_accettaz, numero_accettaz) %>%
+  mutate(
+    fine_analisi_max_acc = max(
+      fine_analisi_d,
+      na.rm = TRUE
+    ),
+    esame_vincolante_effettivo =
+      fine_analisi_d == fine_analisi_max_acc
+  ) %>%
+  ungroup() %>%
+  filter(esame_vincolante_effettivo) %>%
+  group_by(anno_accettaz, numero_accettaz) %>%
+  slice_max(
+    order_by = durata_tecnica_effettiva,
+    n = 1,
+    with_ties = FALSE
+  ) %>%
+  ungroup() %>%
+  select(
+    anno_accettaz,
+    numero_accettaz,
+    nome_prodotto_vincolante = nome_prodotto,
+    descrizione_prodotto_vincolante = descrizione_prodotto,
+    inizio_analisi_vincolante = inizio_analisi_d,
+    fine_analisi_vincolante = fine_analisi_d,
+    durata_tecnica_vincolante = durata_tecnica_effettiva
+  )
+
+esami_vincolanti |>  View()
+
+
+diagnostica_accettazioni <- acc_cdc %>%
+  left_join(
+    esami_vincolanti,
+    by = c("anno_accettaz", "numero_accettaz")
+  ) %>%
+  mutate(
+    tempo_pre_analitico = giorni_lavorativi(
+      data_acc,
+      inizio_analisi_vincolante
+    ),
+    
+    tempo_post_analitico = giorni_lavorativi(
+      fine_analisi_vincolante,
+      data_rdp
+    ),
+    
+    extra_tecnico_effettivo_vs_target =
+      durata_tecnica_vincolante - target_aggiustato,
+    
+    extra_pre_pos = tempo_attesa_utente - durata_tecnica_vincolante
+  )
+
+diagnostica_accettazioni |>  View()
+
+
+
+diagnostica_accettazioni <- diagnostica_accettazioni %>%
+  mutate(
+    componente_pre = pmax(
+      0,
+      tempo_pre_analitico
+    ),
+    
+    componente_tecnica_extra = pmax(
+      0,
+      extra_tecnico_effettivo_vs_target
+    ),
+    
+    componente_post = pmax(
+      0,
+      tempo_post_analitico
+    ),
+    
+    causa_probabile = case_when(
+      !fuori_target_aggiustato ~ "Entro target",
+      
+      componente_pre >= componente_tecnica_extra &
+        componente_pre >= componente_post &
+        componente_pre > soglia_pre_analitico ~
+        "Pre-analitico / programmazione",
+      
+      componente_post >= componente_pre &
+        componente_post >= componente_tecnica_extra &
+        componente_post > soglia_firma ~
+        "Post-analitico / firma",
+      
+      componente_tecnica_extra > 0 &
+        componente_tecnica_extra >= componente_pre &
+        componente_tecnica_extra >= componente_post ~
+        "Durata tecnica effettiva superiore al benchmark",
+      
+      fuori_target_aggiustato &
+        componente_pre <= soglia_pre_analitico &
+        componente_post <= soglia_firma &
+        componente_tecnica_extra <= 0 ~
+        "Scostamento lieve / soglia tecnica",
+      
+      TRUE ~ "Da approfondire"
+    )
+  )
+
+
+diagnostica_accettazioni |>  View()
+
+
+
+sintesi_cause <- diagnostica_accettazioni %>%
+  filter(fuori_target_aggiustato) %>%
+  count(causa_probabile) %>%
+  mutate(
+    perc = round(100 * n / sum(n), 1)
+  ) %>%
+  arrange(desc(n))
+
+View(sintesi_cause)
+
+
+
+sintesi_esami_vincolanti <- diagnostica_accettazioni %>%
+  filter(fuori_target_aggiustato) %>%
+  group_by(
+    nome_prodotto_vincolante,
+    descrizione_prodotto_vincolante
+  ) %>%
+  summarise(
+    accettazioni_fuori_target = n(),
+    
+    perc_su_fuori_target = round(
+      100 * accettazioni_fuori_target /
+        sum(diagnostica_accettazioni$fuori_target_aggiustato, na.rm = TRUE),
+      1
+    ),
+    
+    mediana_attesa_utente = median(
+      tempo_attesa_utente,
+      na.rm = TRUE
+    ),
+    
+    mediana_target_aggiustato = median(
+      target_aggiustato,
+      na.rm = TRUE
+    ),
+    
+    mediana_scostamento = median(
+      scostamento_vs_target,
+      na.rm = TRUE
+    ),
+    
+    mediana_pre_analitico = median(
+      tempo_pre_analitico,
+      na.rm = TRUE
+    ),
+    
+    mediana_durata_tecnica_vincolante = median(
+      durata_tecnica_vincolante,
+      na.rm = TRUE
+    ),
+    
+    mediana_post_analitico = median(
+      tempo_post_analitico,
+      na.rm = TRUE
+    ),
+    
+    .groups = "drop"
+  ) %>%
+  arrange(desc(accettazioni_fuori_target))
+
+View(sintesi_esami_vincolanti)
+
+
+
+casi_sentinella <- diagnostica_accettazioni %>%
+  filter(fuori_target_aggiustato) %>%
+  arrange(desc(scostamento_vs_target)) %>%
+  select(
+    anno_accettaz,
+    numero_accettaz,
+    settore,
+    data_acc,
+    data_rdp,
+    tempo_attesa_utente,
+    target_aggiustato,
+    scostamento_vs_target,
+    n_esami,
+    nome_prodotto_vincolante,
+    descrizione_prodotto_vincolante,
+    inizio_analisi_vincolante,
+    fine_analisi_vincolante,
+    tempo_pre_analitico,
+    durata_tecnica_vincolante,
+    tempo_post_analitico,
+    causa_probabile
+  )
+
+View(casi_sentinella)
+
+
+trend_mensile <- diagnostica_accettazioni %>%
+  mutate(
+    mese = floor_date(data_acc, "month")
+  ) %>%
+  group_by(mese) %>%
+  summarise(
+    accettazioni = n(),
+    perc_entro_target = round(
+      100 * mean(entro_target_aggiustato, na.rm = TRUE),
+      1
+    ),
+    mediana_scostamento = median(
+      scostamento_vs_target,
+      na.rm = TRUE
+    ),
+    .groups = "drop"
+  )
+
+View(trend_mensile)

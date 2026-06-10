@@ -184,7 +184,554 @@ server <- function(input, output, session) {
       aggiungi_gruppo_org(input$livello_org_acc)
   })
   
+  # dataset diagnostica cdc
   
+  diag_acc_cdc <- reactive({
+    
+    req(input$diag_cdc)
+    req(input$diag_benchmark)
+    req(input$diag_periodo)
+    
+    benchmark_col <- input$diag_benchmark
+    
+    kpi_accettazioni_in_adj %>%
+      mutate(
+        data_acc = as.Date(data_acc),
+        data_rdp = as.Date(data_rdp),
+        
+        tecnico_atteso_target = .data[[benchmark_col]],
+        target_aggiustato = tecnico_atteso_target,
+        
+        entro_target_aggiustato =
+          tempo_attesa_utente <= target_aggiustato,
+        
+        fuori_target_aggiustato =
+          !entro_target_aggiustato,
+        
+        scostamento_vs_target =
+          tempo_attesa_utente - target_aggiustato,
+        
+        entro_target_utenza =
+          tempo_attesa_utente <= input$diag_target_utenza
+      ) %>%
+      filter(
+        tipo_accettazione == "IN",
+        data_acc >= input$diag_periodo[1],
+        data_acc <= input$diag_periodo[2],
+        nome_cdc == input$diag_cdc
+      )
+  })
+  
+  
+  output$diag_sintesi_cdc <- renderTable({
+    
+    df <- diag_acc_cdc()
+    
+    validate(
+      need(nrow(df) > 0, "Nessuna accettazione disponibile per il CDC selezionato.")
+    )
+    
+    df %>%
+      summarise(
+        CDC = first(nome_cdc),
+        Accettazioni_IN = n(),
+        
+        Entro_target_aggiustato = sum(
+          entro_target_aggiustato,
+          na.rm = TRUE
+        ),
+        
+        Perc_entro_target_aggiustato = round(
+          100 * Entro_target_aggiustato / Accettazioni_IN,
+          1
+        ),
+        
+        Fuori_target_aggiustato = sum(
+          fuori_target_aggiustato,
+          na.rm = TRUE
+        ),
+        
+        Perc_fuori_target_aggiustato = round(
+          100 * Fuori_target_aggiustato / Accettazioni_IN,
+          1
+        ),
+        
+        Mediana_attesa_utente = round(
+          median(tempo_attesa_utente, na.rm = TRUE),
+          1
+        ),
+        
+        Mediana_target_aggiustato = round(
+          median(target_aggiustato, na.rm = TRUE),
+          1
+        ),
+        
+        Mediana_scostamento = round(
+          median(scostamento_vs_target, na.rm = TRUE),
+          1
+        ),
+        
+        P75_scostamento = round(
+          q_na(scostamento_vs_target, 0.75),
+          1
+        ),
+        
+        P90_scostamento = round(
+          q_na(scostamento_vs_target, 0.90),
+          1
+        ),
+        
+        Max_scostamento = round(
+          max_na_num(scostamento_vs_target),
+          1
+        )
+      )
+  })
+  
+  output$diag_tab_scostamenti <- renderTable({
+    
+    df <- diag_acc_cdc()
+    
+    validate(
+      need(nrow(df) > 0, "Nessun dato disponibile.")
+    )
+    
+    df %>%
+      mutate(
+        classe_scostamento = case_when(
+          scostamento_vs_target <= 0 ~ "Entro target",
+          scostamento_vs_target == 1 ~ "+1 giorno",
+          scostamento_vs_target == 2 ~ "+2 giorni",
+          scostamento_vs_target >= 3 ~ ">= +3 giorni",
+          TRUE ~ "Non classificato"
+        ),
+        classe_scostamento = factor(
+          classe_scostamento,
+          levels = c(
+            "Entro target",
+            "+1 giorno",
+            "+2 giorni",
+            ">= +3 giorni",
+            "Non classificato"
+          )
+        )
+      ) %>%
+      count(classe_scostamento) %>%
+      mutate(
+        Percentuale = round(100 * n / sum(n), 1)
+      ) %>%
+      rename(
+        Classe_scostamento = classe_scostamento,
+        Accettazioni = n
+      )
+  })
+  
+  
+  output$diag_plot_scostamenti <- renderPlot({
+    
+    df <- diag_acc_cdc()
+    
+    validate(
+      need(nrow(df) > 0, "Nessun dato disponibile.")
+    )
+    
+    df_plot <- df %>%
+      mutate(
+        classe_scostamento = case_when(
+          scostamento_vs_target <= 0 ~ "Entro target",
+          scostamento_vs_target == 1 ~ "+1 giorno",
+          scostamento_vs_target == 2 ~ "+2 giorni",
+          scostamento_vs_target >= 3 ~ ">= +3 giorni",
+          TRUE ~ "Non classificato"
+        ),
+        classe_scostamento = factor(
+          classe_scostamento,
+          levels = c(
+            "Entro target",
+            "+1 giorno",
+            "+2 giorni",
+            ">= +3 giorni",
+            "Non classificato"
+          )
+        )
+      ) %>%
+      count(classe_scostamento) %>%
+      mutate(
+        perc = round(100 * n / sum(n), 1)
+      )
+    
+    ggplot(
+      df_plot,
+      aes(
+        x = classe_scostamento,
+        y = perc
+      )
+    ) +
+      geom_col(fill = "#2C7FB8") +
+      geom_text(
+        aes(label = paste0(perc, "%")),
+        vjust = -0.3,
+        size = 4
+      ) +
+      labs(
+        x = "Classe di scostamento",
+        y = "% accettazioni",
+        title = "Distribuzione degli scostamenti dal target aggiustato"
+      ) +
+      theme_minimal()
+  })
+  
+  output$diag_tab_settore <- renderTable({
+    
+    df <- diag_acc_cdc()
+    
+    validate(
+      need(nrow(df) > 0, "Nessun dato disponibile.")
+    )
+    
+    df %>%
+      group_by(settore) %>%
+      summarise(
+        Accettazioni_IN = n(),
+        
+        Entro_target = sum(
+          entro_target_aggiustato,
+          na.rm = TRUE
+        ),
+        
+        Perc_entro_target = round(
+          100 * Entro_target / Accettazioni_IN,
+          1
+        ),
+        
+        Fuori_target = sum(
+          fuori_target_aggiustato,
+          na.rm = TRUE
+        ),
+        
+        Perc_fuori_target = round(
+          100 * Fuori_target / Accettazioni_IN,
+          1
+        ),
+        
+        Mediana_attesa = round(
+          median(tempo_attesa_utente, na.rm = TRUE),
+          1
+        ),
+        
+        Mediana_target_aggiustato = round(
+          median(target_aggiustato, na.rm = TRUE),
+          1
+        ),
+        
+        Mediana_scostamento = round(
+          median(scostamento_vs_target, na.rm = TRUE),
+          1
+        ),
+        
+        P90_scostamento = round(
+          q_na(scostamento_vs_target, 0.90),
+          1
+        ),
+        
+        .groups = "drop"
+      ) %>%
+      arrange(Perc_entro_target)
+  })
+  
+  output$diag_tab_complessita <- renderTable({
+    
+    df <- diag_acc_cdc()
+    
+    validate(
+      need(nrow(df) > 0, "Nessun dato disponibile.")
+    )
+    
+    df %>%
+      mutate(
+        classe_complessita = case_when(
+          target_aggiustato <= 1 ~ "Bassa",
+          target_aggiustato <= 3 ~ "Media",
+          target_aggiustato <= 5 ~ "Alta",
+          target_aggiustato > 5 ~ "Molto alta",
+          TRUE ~ "Non classificato"
+        ),
+        classe_complessita = factor(
+          classe_complessita,
+          levels = c(
+            "Bassa",
+            "Media",
+            "Alta",
+            "Molto alta",
+            "Non classificato"
+          )
+        )
+      ) %>%
+      group_by(classe_complessita) %>%
+      summarise(
+        Accettazioni = n(),
+        
+        Perc_entro_target = round(
+          100 * mean(entro_target_aggiustato, na.rm = TRUE),
+          1
+        ),
+        
+        Mediana_attesa = round(
+          median(tempo_attesa_utente, na.rm = TRUE),
+          1
+        ),
+        
+        Mediana_target_aggiustato = round(
+          median(target_aggiustato, na.rm = TRUE),
+          1
+        ),
+        
+        Mediana_scostamento = round(
+          median(scostamento_vs_target, na.rm = TRUE),
+          1
+        ),
+        
+        .groups = "drop"
+      )
+  })
+  
+  diag_esami_cdc <- reactive({
+    
+    acc <- diag_acc_cdc()
+    
+    validate(
+      need(nrow(acc) > 0, "Nessuna accettazione disponibile.")
+    )
+    
+    df_app %>%
+      mutate(
+        data_acc_d = as.Date(data_acc_d),
+        data_rdp_d = as.Date(data_rdp_d),
+        inizio_analisi_d = as.Date(inizio_analisi),
+        fine_analisi_d = as.Date(fine_analisi),
+        
+        durata_tecnica_effettiva = giorni_lavorativi(
+          inizio_analisi_d,
+          fine_analisi_d
+        )
+      ) %>%
+      semi_join(
+        acc %>%
+          select(anno_accettaz, numero_accettaz),
+        by = c("anno_accettaz", "numero_accettaz")
+      )
+  })
+  
+  
+  diag_accettazioni_complete <- reactive({
+    
+    acc <- diag_acc_cdc()
+    esami <- diag_esami_cdc()
+    
+    esami_vincolanti <- esami %>%
+      group_by(anno_accettaz, numero_accettaz) %>%
+      mutate(
+        fine_analisi_max_acc = max(
+          fine_analisi_d,
+          na.rm = TRUE
+        ),
+        esame_vincolante_effettivo =
+          fine_analisi_d == fine_analisi_max_acc
+      ) %>%
+      ungroup() %>%
+      filter(esame_vincolante_effettivo) %>%
+      group_by(anno_accettaz, numero_accettaz) %>%
+      slice_max(
+        order_by = durata_tecnica_effettiva,
+        n = 1,
+        with_ties = FALSE
+      ) %>%
+      ungroup() %>%
+      select(
+        anno_accettaz,
+        numero_accettaz,
+        nome_prodotto_vincolante = nome_prodotto,
+        descrizione_prodotto_vincolante = descrizione_prodotto,
+        inizio_analisi_vincolante = inizio_analisi_d,
+        fine_analisi_vincolante = fine_analisi_d,
+        durata_tecnica_vincolante = durata_tecnica_effettiva
+      )
+    
+    acc %>%
+      left_join(
+        esami_vincolanti,
+        by = c("anno_accettaz", "numero_accettaz")
+      ) %>%
+      mutate(
+        tempo_pre_analitico = giorni_lavorativi(
+          data_acc,
+          inizio_analisi_vincolante
+        ),
+        
+        tempo_post_analitico = giorni_lavorativi(
+          fine_analisi_vincolante,
+          data_rdp
+        ),
+        
+        extra_tecnico_effettivo_vs_target =
+          durata_tecnica_vincolante - target_aggiustato,
+        
+        componente_pre = pmax(
+          0,
+          tempo_pre_analitico
+        ),
+        
+        componente_tecnica_extra = pmax(
+          0,
+          extra_tecnico_effettivo_vs_target
+        ),
+        
+        componente_post = pmax(
+          0,
+          tempo_post_analitico
+        ),
+        
+        causa_probabile = case_when(
+          !fuori_target_aggiustato ~ "Entro target",
+          
+          componente_pre >= componente_tecnica_extra &
+            componente_pre >= componente_post &
+            componente_pre > input$diag_soglia_pre ~
+            "Pre-analitico / programmazione",
+          
+          componente_post >= componente_pre &
+            componente_post >= componente_tecnica_extra &
+            componente_post > input$diag_soglia_firma ~
+            "Post-analitico / firma",
+          
+          componente_tecnica_extra > 0 &
+            componente_tecnica_extra >= componente_pre &
+            componente_tecnica_extra >= componente_post ~
+            "Durata tecnica effettiva superiore al benchmark",
+          
+          fuori_target_aggiustato &
+            componente_pre <= input$diag_soglia_pre &
+            componente_post <= input$diag_soglia_firma &
+            componente_tecnica_extra <= 0 ~
+            "Scostamento lieve / soglia tecnica",
+          
+          TRUE ~ "Da approfondire"
+        )
+      )
+  })
+  
+  output$diag_tab_cause <- renderTable({
+    
+    df <- diag_accettazioni_complete()
+    
+    validate(
+      need(nrow(df) > 0, "Nessun dato disponibile.")
+    )
+    
+    df %>%
+      filter(fuori_target_aggiustato) %>%
+      count(causa_probabile) %>%
+      mutate(
+        Percentuale = round(100 * n / sum(n), 1)
+      ) %>%
+      rename(
+        Causa_probabile = causa_probabile,
+        Accettazioni = n
+      ) %>%
+      arrange(desc(Accettazioni))
+  })
+  
+  
+  output$diag_tab_esami_vincolanti <- renderTable({
+    
+    df <- diag_accettazioni_complete()
+    
+    validate(
+      need(nrow(df) > 0, "Nessun dato disponibile.")
+    )
+    
+    totale_fuori <- sum(df$fuori_target_aggiustato, na.rm = TRUE)
+    
+    df %>%
+      filter(fuori_target_aggiustato) %>%
+      group_by(
+        nome_prodotto_vincolante,
+        descrizione_prodotto_vincolante
+      ) %>%
+      summarise(
+        Accettazioni_fuori_target = n(),
+        
+        Perc_su_fuori_target = round(
+          100 * Accettazioni_fuori_target / totale_fuori,
+          1
+        ),
+        
+        Mediana_attesa_utente = round(
+          median(tempo_attesa_utente, na.rm = TRUE),
+          1
+        ),
+        
+        Mediana_target_aggiustato = round(
+          median(target_aggiustato, na.rm = TRUE),
+          1
+        ),
+        
+        Mediana_scostamento = round(
+          median(scostamento_vs_target, na.rm = TRUE),
+          1
+        ),
+        
+        Mediana_pre_analitico = round(
+          median(tempo_pre_analitico, na.rm = TRUE),
+          1
+        ),
+        
+        Mediana_durata_tecnica_vincolante = round(
+          median(durata_tecnica_vincolante, na.rm = TRUE),
+          1
+        ),
+        
+        Mediana_post_analitico = round(
+          median(tempo_post_analitico, na.rm = TRUE),
+          1
+        ),
+        
+        .groups = "drop"
+      ) %>%
+      arrange(desc(Accettazioni_fuori_target)) %>%
+      head(20)
+  })
+  
+  output$diag_tab_casi_sentinella <- renderTable({
+    
+    df <- diag_accettazioni_complete()
+    
+    validate(
+      need(nrow(df) > 0, "Nessun dato disponibile.")
+    )
+    
+    df %>%
+      filter(fuori_target_aggiustato) %>%
+      arrange(desc(scostamento_vs_target)) %>%
+      select(
+        anno_accettaz,
+        numero_accettaz,
+        settore,
+        data_acc,
+        data_rdp,
+        tempo_attesa_utente,
+        target_aggiustato,
+        scostamento_vs_target,
+        n_esami,
+        nome_prodotto_vincolante,
+        inizio_analisi_vincolante,
+        fine_analisi_vincolante,
+        tempo_pre_analitico,
+        durata_tecnica_vincolante,
+        tempo_post_analitico,
+        causa_probabile
+      )
+  })
   # ---------------------------------------------------
   # Tabella statistiche tempo attesa utente
   # ---------------------------------------------------

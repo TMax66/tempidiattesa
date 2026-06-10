@@ -31,7 +31,9 @@ saveRDS(anagrafica_cdc, here("tautapp", "anagrafica_cdc.rds"))
 
  
 
-esame_da_escludere <- "Motivi di riemissione del Rapporto di Prova"
+esame_da_escludere <- c("Motivi di riemissione del Rapporto di Prova", 
+                        "Motivi di mancata esecuzione di prove richieste")
+
 
 readRDS("darwin0306.RDS") |> 
   mutate(cdc_erogante = cdc_cod) |> 
@@ -89,7 +91,7 @@ readRDS("darwin0306.RDS") |>
 # =====================================================
 group_by(anno_accettaz, numero_accettaz) |>
   filter(
-    !any(nome_prodotto == esame_da_escludere, na.rm = TRUE) # questo codice esclude tutte le accettazioni in cui ci sia almeno una programmazione "Motivi di riemissione del Rapporto di Prova"
+    !any(nome_prodotto %in% esame_da_escludere, na.rm = TRUE) # questo codice esclude tutte le accettazioni in cui ci sia almeno una programmazione "Motivi di riemissione del Rapporto di Prova"
     # questo perchè fino a quando non dispongo della data du emissione del primo rdp completo rischia di sovrastimare il tempo di utenza......andrà tolto
   ) |>
   ungroup() |>

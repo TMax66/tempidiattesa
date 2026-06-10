@@ -82,6 +82,22 @@ aggiungi_gruppo_org <- function(df, livello) {
   }
 }
 
+
+q_na <- function(x, p) {
+  if (all(is.na(x))) {
+    return(NA_real_)
+  }
+  as.numeric(quantile(x, p, na.rm = TRUE))
+}
+
+max_na_num <- function(x) {
+  if (all(is.na(x))) {
+    return(NA_real_)
+  }
+  max(x, na.rm = TRUE)
+}
+
+
 # =====================================================
 # 3. NORMALIZZAZIONE ANAGRAFICA CDC
 # =====================================================
