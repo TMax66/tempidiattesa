@@ -81,12 +81,12 @@ readRDS("darwin0306.RDS") |>
     .default = NA
   )) |> 
   
-
+  
   
   # STEP 6: Esclusione attività del latte  routine non emesse in stampa
   filter(routine_instampa == "Si" | is.na(routine_instampa)) |>
   
-# =====================================================
+  # =====================================================
 # ESCLUSIONE ACCETTAZIONI CHE CONTENGONO L'ESAME Motivi di riemissione del Rapporto di Prova
 # =====================================================
 group_by(anno_accettaz, numero_accettaz) |>
@@ -190,7 +190,7 @@ df_app <- df_clean %>%  # <- forse è unitile questo passaggio perchè le date i
     key_acc    = paste(anno_accettaz, numero_accettaz, sep = "_")
   )
 
-
+saveRDS(df_app, here("tautapp", "df_app.RDS"))
 
 # ======================================================
 # FUNZIONE GIORNI LAVORATIVI
@@ -611,18 +611,19 @@ kpi_accettazioni_in_adj <- df_in_esami_bench %>%
 
 saveRDS(
   kpi_accettazioni_in_adj, here("tautapp",  
-  "kpi_accettazioni_in_adj.rds"
-))
+                                "kpi_accettazioni_in_adj.rds"
+  ))
 
 saveRDS(
   benchmark_settore_prodotto, here("tautapp",  
-  "benchmark_settore_prodotto.rds"
-))
+                                   "benchmark_settore_prodotto.rds"
+  ))
 
 saveRDS(
   benchmark_prodotto,  here("tautapp",  
-  "benchmark_prodotto.rds"
-))
+                            "benchmark_prodotto.rds"
+  ))
+
 
 
 
@@ -698,82 +699,3 @@ saveRDS(
 
 
 
-
-
-
-
-
-
-# library(dplyr)
-# library(stringr)
-# 
-# df_in_esami <- df_app %>%
-#   mutate(
-#     esame_out = cdc_accettante != cdc_erogante
-#   ) %>%
-#   group_by(anno_accettaz, numero_accettaz) %>%
-#   filter(
-#     !any(esame_out, na.rm = TRUE),
-#     !str_detect(descrizione_prodotto, "Non codificato - Multipla")
-#   ) %>%
-#   ungroup()
-# 
-# df_in_esami <- df_in_esami %>%
-#   mutate(
-#     inizio_analisi_d = as.Date(inizio_analisi),
-#     fine_analisi_d = as.Date(fine_analisi),
-#     durata_tecnica = giorni_lavorativi(inizio_analisi_d, fine_analisi_d)
-#   )
-# 
-# benchmark_tecnico <- df_in_esami %>%
-#   filter(!is.na(durata_tecnica)) %>%
-#   group_by(nome_prodotto) %>%
-#   summarise(
-#     n_esami_benchmark = n(),
-#     tecnico_mediano = median(durata_tecnica, na.rm = TRUE),
-#     tecnico_p75 = as.numeric(quantile(durata_tecnica, 0.75, na.rm = TRUE)),
-#     tecnico_p90 = as.numeric(quantile(durata_tecnica, 0.90, na.rm = TRUE)),
-#     .groups = "drop"
-#   )
-# 
-# kpi_accettazioni_in_adj <- df_in_esami %>%
-#   left_join(
-#     benchmark_tecnico,
-#     by = "nome_prodotto"
-#   ) %>%
-#   group_by(anno_accettaz, numero_accettaz) %>%
-#   summarise(
-#     cdc_accettante = first(cdc_accettante),
-#     settore = first(settore),
-#     
-#     data_acc = min(data_acc_d, na.rm = TRUE),
-#     data_rdp = max(data_rdp_d, na.rm = TRUE),
-#     
-#     n_esami = n_distinct(nome_prodotto),
-#     
-#     tempo_attesa_utente = giorni_lavorativi(data_acc, data_rdp),
-#     
-#     tecnico_atteso_mediano = max(tecnico_mediano, na.rm = TRUE),
-#     tecnico_atteso_p75 = max(tecnico_p75, na.rm = TRUE),
-#     tecnico_atteso_p90 = max(tecnico_p90, na.rm = TRUE),
-#     
-#     tecnico_effettivo_max = max(durata_tecnica, na.rm = TRUE),
-#     
-#     n_esami_benchmark_min = min(n_esami_benchmark, na.rm = TRUE),
-#     
-#     .groups = "drop"
-#   ) %>%
-#   mutate(
-#     tipo_accettazione = "IN",
-#     
-#     scostamento_vs_mediana = tempo_attesa_utente - tecnico_atteso_mediano,
-#     scostamento_vs_p75 = tempo_attesa_utente - tecnico_atteso_p75,
-#     scostamento_vs_p90 = tempo_attesa_utente - tecnico_atteso_p90,
-#     
-#     extra_vs_mediana_pos = pmax(0, scostamento_vs_mediana),
-#     extra_vs_p75_pos = pmax(0, scostamento_vs_p75),
-#     extra_vs_p90_pos = pmax(0, scostamento_vs_p90)
-#   )
-# 
-# saveRDS(kpi_accettazioni_in_adj,  here("tautapp", "kpi_accettazioni_in_adj.rds"))
-# saveRDS(benchmark_tecnico, here("tautapp","benchmark_tecnico.rds"))

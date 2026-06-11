@@ -1,18 +1,16 @@
 library(shiny)
-library(dplyr)
+library(tidyverse)
 library(ggplot2)
 library(lubridate)
+library(here)
 
 # =====================================================
 # 1. CARICAMENTO DATASET
 # =====================================================
 
-kpi_accettazioni <- readRDS(here("tautapp", "kpi_accettazioni.rds"))
-anagrafica_cdc <- readRDS(here("tautapp","anagrafica_cdc.rds"))
-
-kpi_accettazioni_in_adj <- readRDS(here("tautapp","kpi_accettazioni_in_adj.rds"))
-
- df_app <- readRDS(here("tautapp", "df_app.RDS"))
+kpi_accettazioni <- readRDS(here("dati", "kpi_accettazioni.rds"))
+anagrafica_cdc <- readRDS( here("dati", "anagrafica_cdc.rds"))
+kpi_accettazioni_in_adj <- readRDS(here("dati", "kpi_accettazioni_in_adj.rds"))
 
 
 # =====================================================
@@ -98,57 +96,6 @@ max_na_num <- function(x) {
   }
   max(x, na.rm = TRUE)
 }
-
-
-
-giorni_lavorativi <- function(data_inizio, data_fine) {
-  
-  data_inizio <- as.Date(data_inizio)
-  data_fine <- as.Date(data_fine)
-  
-  out <- rep(NA_integer_, length(data_inizio))
-  
-  ok <- !is.na(data_inizio) & 
-    !is.na(data_fine) & 
-    data_fine >= data_inizio
-  
-  if (!any(ok)) {
-    return(out)
-  }
-  
-  # Intervallo coerente con as.integer(data_fine - data_inizio):
-  # escludo data_inizio e includo data_fine
-  start <- data_inizio[ok] + 1
-  end <- data_fine[ok]
-  
-  n_giorni <- as.integer(end - start) + 1
-  
-  # Se data_inizio == data_fine, n_giorni diventa 0
-  n_giorni[n_giorni < 0] <- 0
-  
-  settimane_intere <- n_giorni %/% 7
-  resto <- n_giorni %% 7
-  
-  conteggio <- settimane_intere * 5
-  
-  giorno_settimana_start <- as.POSIXlt(start)$wday
-  # wday: domenica = 0, lunedì = 1, ..., sabato = 6
-  
-  for (i in 0:5) {
-    giorno <- (giorno_settimana_start + i) %% 7
-    
-    conteggio <- conteggio + ifelse(
-      resto > i & giorno %in% 1:5,
-      1,
-      0
-    )
-  }
-  
-  out[ok] <- as.integer(conteggio)
-  
-  out
-}
-
 
 
 # =====================================================

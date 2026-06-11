@@ -209,11 +209,11 @@ ui <- navbarPage(
   
   
   # ===================================================
-  # PAGINA 1 - CDC ACCETTANTI
+  # PAGINA 1 - ACCETTAZIONI IN
   # ===================================================
   
   tabPanel(
-    title = "CDC accettanti",
+    title = "Accettazioni IN",
     
     sidebarLayout(
       
@@ -417,18 +417,18 @@ ui <- navbarPage(
   ),
   
   # ===================================================
-  # PAGINA DIAGNOSTICA CDC
+  # PAGINA DIAGNOSTICA ACCETTAZIONI IN
   # ===================================================
   
   tabPanel(
     title = "Diagnostica CDC",
-    
+
     sidebarLayout(
-      
+
       sidebarPanel(
-        
+
         h4("Selezione CDC"),
-        
+
         selectInput(
           inputId = "diag_cdc",
           label = "CDC da analizzare:",
@@ -436,14 +436,14 @@ ui <- navbarPage(
           selected = NULL,
           multiple = FALSE
         ),
-        
+
         dateRangeInput(
           inputId = "diag_periodo",
           label = "Periodo data accettazione:",
           start = data_min_acc,
           end = data_max_acc
         ),
-        
+
         selectInput(
           inputId = "diag_benchmark",
           label = "Benchmark tecnico per target aggiustato:",
@@ -454,7 +454,7 @@ ui <- navbarPage(
           ),
           selected = "tecnico_atteso_p75"
         ),
-        
+
         numericInput(
           inputId = "diag_target_utenza",
           label = "Target utenza, giorni lavorativi:",
@@ -462,7 +462,7 @@ ui <- navbarPage(
           min = 0,
           step = 1
         ),
-        
+
         numericInput(
           inputId = "diag_soglia_pre",
           label = "Soglia pre-analitico rilevante:",
@@ -470,7 +470,7 @@ ui <- navbarPage(
           min = 0,
           step = 1
         ),
-        
+
         numericInput(
           inputId = "diag_soglia_firma",
           label = "Soglia post-analitico/firma rilevante:",
@@ -479,86 +479,86 @@ ui <- navbarPage(
           step = 1
         )
       ),
-      
+
       mainPanel(
-        
+
         h3("Diagnostica del mancato raggiungimento del target aggiustato"),
-        
+
         p(
           "Questa sezione ricostruisce, per il CDC selezionato, le accettazioni IN ",
           "che non rientrano nel target aggiustato per complessità tecnica. ",
           "L'obiettivo è individuare se la criticità è concentrata in specifici settori, ",
           "classi di complessità, esami vincolanti o componenti del processo."
         ),
-        
+
         hr(),
-        
+
         h4("Sintesi CDC"),
         tableOutput("diag_sintesi_cdc"),
-        
+
         hr(),
-        
+
         h4("Distribuzione degli scostamenti"),
         tableOutput("diag_tab_scostamenti"),
         plotOutput("diag_plot_scostamenti", height = "350px"),
-        
+
         hr(),
-        
+
         h4("Analisi per settore"),
         tableOutput("diag_tab_settore"),
-        
+
         hr(),
-        
+
         h4("Analisi per classe di complessità"),
         tableOutput("diag_tab_complessita"),
-        
+
         hr(),
-        
+
         h4("Cause probabili delle accettazioni fuori target"),
         tableOutput("diag_tab_cause"),
-        
+
         hr(),
-        
+
         h4("Esami vincolanti nelle accettazioni fuori target"),
         tableOutput("diag_tab_esami_vincolanti"),
-        
+
         hr(),
-        
+
         h4("Casi sentinella"),
         tableOutput("diag_tab_casi_sentinella")
       )
     )
-  ),
-  
-  # ===================================================
-  # PAGINA 2 - CDC EROGANTI
-  # ===================================================
-  
-  tabPanel(
-    title = "CDC eroganti",
-    
-    fluidPage(
-      
-      h3("Monitoraggio CDC eroganti"),
-      
-      p(
-        "Questa sezione sarà dedicata all'analisi dei CDC eroganti. ",
-        "La logica sarà distinta da quella dei CDC accettanti, perché qui l'interesse non è più solo chi ha accettato il campione, ",
-        "ma quale CDC ha erogato gli esami, quali nodi della rete sono coinvolti e quali CDC possono essere associati ai tempi di chiusura più lunghi."
-      ),
-      
-      hr(),
-      
-      h4("Sezione in costruzione"),
-      
-      tags$ul(
-        tags$li("numero di accettazioni OUT in cui il CDC erogante è coinvolto;"),
-        tags$li("numero di esami erogati per conto di altri CDC;"),
-        tags$li("tempo tecnico di analisi;"),
-        tags$li("identificazione del CDC erogante vincolante;"),
-        tags$li("network accettante → erogante;"),
-        tags$li("ranking degli eroganti associati ai tempi di attesa più elevati.")
-      )
-    )
   )
+  
+  # # ===================================================
+  # # PAGINA 2 - ACCETTAZIONI OUT
+  # # ===================================================
+  # 
+  # tabPanel(
+  #   title = "Accettazioni OUT",
+  #   
+  #   fluidPage(
+  #     
+  #     h3("Monitoraggio CDC eroganti"),
+  #     
+  #     p(
+  #       "Questa sezione sarà dedicata all'analisi dei CDC eroganti. ",
+  #       "La logica sarà distinta da quella dei CDC accettanti, perché qui l'interesse non è più solo chi ha accettato il campione, ",
+  #       "ma quale CDC ha erogato gli esami, quali nodi della rete sono coinvolti e quali CDC possono essere associati ai tempi di chiusura più lunghi."
+  #     ),
+  #     
+  #     hr(),
+  #     
+  #     h4("Sezione in costruzione"),
+  #     
+  #     tags$ul(
+  #       tags$li("numero di accettazioni OUT in cui il CDC erogante è coinvolto;"),
+  #       tags$li("numero di esami erogati per conto di altri CDC;"),
+  #       tags$li("tempo tecnico di analisi;"),
+  #       tags$li("identificazione del CDC erogante vincolante;"),
+  #       tags$li("network accettante → erogante;"),
+  #       tags$li("ranking degli eroganti associati ai tempi di attesa più elevati.")
+  #     )
+  #   )
+  # )
 )
